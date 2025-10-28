@@ -20,6 +20,20 @@ app.get('/', (req, res) => {
   res.json({ message: 'MERN Backend API' });
 });
 
+app.post('/api/send-data', (req, res) => {
+  console.log("Incoming data:", req.body);
+  const {name,age} =req.body;
+  res.json({
+    message: `Data received: ${name}, Age: ${age}`
+  });
+});
+
+
+app.get('/api/test', (req, res) => {
+  res.json({ message: 'Backend connected successfully!' });
+});
+
+
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);
