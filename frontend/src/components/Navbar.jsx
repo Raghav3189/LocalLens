@@ -10,7 +10,7 @@ const Navbar = () => {
       <Brand>LocalLens</Brand>
       <NavList>
         <NavItem onClick={ () => navigate("/")}>Home</NavItem>
-        <NavItem>Issues</NavItem>
+        <NavItem onClick={ () => navigate("/h")}>Test</NavItem>
         <NavItem>Profile</NavItem>
       </NavList>
       <ButtonGroup>
