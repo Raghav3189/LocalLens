@@ -2,42 +2,69 @@ import React from "react";
 import styled from "styled-components";
 
 const StyledButton = styled.button`
-  padding: 10px 32px;
-  background-color: #007bff;
+  padding: 12px 32px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
   border: none;
   border-radius: 8px;
   cursor: pointer;
   font-size: 15px;
-  font-weight: 500;
-  transition: all 0.2s ease;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  font-weight: 600;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
+  position: relative;
+  overflow: hidden;
+
+  &::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
 
   &:hover {
-    background-color: #2177d3;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-    /* transform: translateY(-1px); */
+    // transform: translateY(-2px);
+    box-shadow: 0 6px 25px rgba(102, 126, 234, 0.4);
+
+    &::before {
+      opacity: 1;
+    }
   }
 
   &:active {
-    background-color: #2f8fef;
     transform: translateY(0);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
   }
 
   &:focus-visible {
-    outline: 3px solid #80bdff;
+    outline: 3px solid rgba(102, 126, 234, 0.5);
     outline-offset: 2px;
   }
 
   &:disabled {
-    background-color: #6c757d;
+    background: #9ca3af;
     cursor: not-allowed;
     opacity: 0.6;
+    transform: none;
+    box-shadow: none;
+
+    &::before {
+      display: none;
+    }
+  }
+
+  span {
+    position: relative;
+    z-index: 1;
   }
 `;
 
@@ -48,6 +75,8 @@ const Spinner = styled.div`
   border-top-color: white;
   border-radius: 50%;
   animation: spin 0.6s linear infinite;
+  position: relative;
+  z-index: 1;
 
   @keyframes spin {
     to {
@@ -59,7 +88,14 @@ const Spinner = styled.div`
 function Button({ text, onClick, disabled = false, loading = false, type = "button" }) {
   return (
     <StyledButton onClick={onClick} disabled={disabled || loading} type={type}>
-      {loading ? <Spinner /> : text}
+      {loading ? (
+        <>
+          <Spinner />
+          <span>{text}</span>
+        </>
+      ) : (
+        <span>{text}</span>
+      )}
     </StyledButton>
   );
 }

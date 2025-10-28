@@ -3,6 +3,8 @@ import styled from "styled-components";
 import Button from "../components/Button";
 import Navbar from "../components/Navbar";
 import axios from "axios";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 
 const Login = () => {
   const [formData, setFormData] = useState({
@@ -13,6 +15,9 @@ const Login = () => {
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
 
+  const { login } = useAuth();
+  const navigate = useNavigate();
+
   const handleChange = (e) => {
     setFormData({
       ...formData,
@@ -22,7 +27,7 @@ const Login = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!formData.email || !formData.password) {
       setMessage("Please fill all fields");
       return;
@@ -34,12 +39,12 @@ const Login = () => {
         "http://localhost:5000/api/auth/login",
         formData
       );
+
+      login(res.data.user);
+
       setMessage("Login Successful");
 
-      localStorage.setItem("token", res.data.token);
-      localStorage.setItem("user", JSON.stringify(res.data.user));
-
-      console.log("Response:", res.data);
+      setTimeout(() => navigate("/"), 1000);
     } catch (err) {
       if (err.response) {
         setMessage(err.response.data.message || "Login failed");
@@ -60,7 +65,7 @@ const Login = () => {
           <FormCard>
             <Title>Welcome Back</Title>
             <Subtitle>Sign in to continue to your account</Subtitle>
-            
+
             <Form onSubmit={handleSubmit}>
               <InputGroup>
                 <Label>Email Address</Label>
@@ -108,6 +113,7 @@ const Login = () => {
 };
 
 export default Login;
+
 
 const PageWrapper = styled.div`
   min-height: calc(100vh - 70px);
@@ -200,9 +206,11 @@ const Message = styled.p`
   font-size: 14px;
   font-weight: 500;
   text-align: center;
-  background-color: ${props => props.success ? '#d4edda' : '#f8d7da'};
-  color: ${props => props.success ? '#155724' : '#721c24'};
-  border: 1px solid ${props => props.success ? '#c3e6cb' : '#f5c6cb'};
+  background-color: ${(props) =>
+    props.success ? "#d4edda" : "#f8d7da"};
+  color: ${(props) => (props.success ? "#155724" : "#721c24")};
+  border: 1px solid
+    ${(props) => (props.success ? "#c3e6cb" : "#f5c6cb")};
 `;
 
 const SignupLink = styled.p`
@@ -215,7 +223,7 @@ const SignupLink = styled.p`
     color: #007bff;
     text-decoration: none;
     font-weight: 600;
-    
+
     &:hover {
       text-decoration: underline;
     }
