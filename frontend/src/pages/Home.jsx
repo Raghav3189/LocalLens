@@ -1,13 +1,13 @@
-import React from "react";
+import React, { useContext } from "react";
 import Navbar from "../components/Navbar";
-import styled from "styled-components";
+import styled, { keyframes } from "styled-components";
 import { useNavigate } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
-import { useContext } from "react";
 
 const Home = () => {
   const navigate = useNavigate();
   const { user } = useContext(AuthContext);
+
   return (
     <>
       <Navbar />
@@ -21,7 +21,7 @@ const Home = () => {
             locally, and raise concerns that matter.
           </HeroSubtitle>
           <HeroButtons>
-            {!user && (
+            {!user ? (
               <>
                 <PrimaryButton onClick={() => navigate("/signup")}>
                   Get Started
@@ -30,20 +30,21 @@ const Home = () => {
                   Sign In
                 </SecondaryButton>
               </>
+            ) : (
+              <HeroSubtitle>Welcome back, {user.name} 👋</HeroSubtitle>
             )}
-
-            {user && <HeroSubtitle>Welcome back, {user.name} 👋</HeroSubtitle>}
           </HeroButtons>
         </HeroContent>
+
         <HeroImage>
-          <ImagePlaceholder>
+          <AnimatedSVG>
             <svg viewBox="0 0 400 400" fill="none">
-              <circle cx="200" cy="200" r="150" fill="#667eea" opacity="0.1" />
-              <circle cx="200" cy="200" r="100" fill="#764ba2" opacity="0.2" />
-              <path d="M200 120 L280 200 L200 280 L120 200 Z" fill="#667eea" />
-              <circle cx="200" cy="200" r="30" fill="white" />
+              <circle cx="200" cy="200" r="150" fill="#667eea" opacity="0.12" />
+              <circle cx="200" cy="200" r="100" fill="#764ba2" opacity="0.18" />
+              <path d="M200 120 L280 200 L200 280 L120 200 Z" fill="#6b6be8" opacity="0.9" />
+              <circle cx="200" cy="200" r="34" fill="white" opacity="0.95" />
             </svg>
-          </ImagePlaceholder>
+          </AnimatedSVG>
         </HeroImage>
       </HeroSection>
 
@@ -51,66 +52,26 @@ const Home = () => {
         <SectionTitle>What You Can Do</SectionTitle>
         <FeaturesGrid>
           <FeatureCard>
-            <IconWrapper color="#ff6b6b">
-              <svg
-                width="40"
-                height="40"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-              >
-                <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
-                <line x1="12" y1="9" x2="12" y2="13" />
-                <line x1="12" y1="17" x2="12.01" y2="17" />
-              </svg>
-            </IconWrapper>
+            <IconWrapper color="#ef4444">🚧</IconWrapper>
             <FeatureTitle>Post Complaints</FeatureTitle>
             <FeatureDescription>
-              Report issues in your community. From potholes to noise
-              complaints, make your voice heard.
+              Report issues in your area — from potholes to streetlights — and bring change.
             </FeatureDescription>
           </FeatureCard>
 
           <FeatureCard>
-            <IconWrapper color="#4ecdc4">
-              <svg
-                width="40"
-                height="40"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-              >
-                <circle cx="9" cy="21" r="1" />
-                <circle cx="20" cy="21" r="1" />
-                <path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6" />
-              </svg>
-            </IconWrapper>
+            <IconWrapper color="#22c55e">🛒</IconWrapper>
             <FeatureTitle>Buy & Sell</FeatureTitle>
             <FeatureDescription>
-              Discover local marketplace. Buy from neighbors, sell items you
-              don't need, support local business.
+              Support your local economy by buying and selling with people nearby.
             </FeatureDescription>
           </FeatureCard>
 
           <FeatureCard>
-            <IconWrapper color="#95e1d3">
-              <svg
-                width="40"
-                height="40"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-              >
-                <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
-              </svg>
-            </IconWrapper>
+            <IconWrapper color="#3b82f6">💬</IconWrapper>
             <FeatureTitle>Raise Concerns</FeatureTitle>
             <FeatureDescription>
-              Start discussions about community matters. Get support, share
-              ideas, and drive positive change.
+              Start discussions, share ideas, and take part in shaping your community.
             </FeatureDescription>
           </FeatureCard>
         </FeaturesGrid>
@@ -124,7 +85,7 @@ const Home = () => {
           </StatCard>
           <StatCard>
             <StatNumber>5K+</StatNumber>
-            <StatLabel>Issues Resolved</StatLabel>
+            <StatLabel>Issues Solved</StatLabel>
           </StatCard>
           <StatCard>
             <StatNumber>15K+</StatNumber>
@@ -138,16 +99,15 @@ const Home = () => {
       </StatsSection>
 
       <CTASection>
-        <CTAContent>
+        <CTAContainer>
           <CTATitle>Ready to Make a Difference?</CTATitle>
           <CTADescription>
-            Join thousands of community members making their neighborhoods
-            better, one post at a time.
+            Be part of your neighborhood’s growth — share, connect, and take action with LocalLens.
           </CTADescription>
-          <CTAButton onClick={() => navigate("/signup")}>
-            Join LocalLens Today
+          <CTAButton onClick={() => navigate(user ? "/" : "/signup")}>
+            {user ? "Explore Now" : "Join LocalLens"}
           </CTAButton>
-        </CTAContent>
+        </CTAContainer>
       </CTASection>
 
       <Footer>
@@ -170,108 +130,90 @@ const Home = () => {
 
 export default Home;
 
+/* --- STYLED COMPONENTS --- */
+
+const float = keyframes`
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-15px); }
+`;
+
 const HeroSection = styled.section`
-  min-height: calc(100vh - 70px);
+  min-height: calc(100vh - 90px);
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 60px 80px;
+  padding: 20px 80px 40px;
   gap: 60px;
 
   @media (max-width: 968px) {
     flex-direction: column;
-    padding: 40px 20px;
     text-align: center;
+    padding: 40px 20px;
   }
 `;
 
 const HeroContent = styled.div`
   flex: 1;
-  max-width: 600px;
+  max-width: 550px;
 `;
 
 const HeroTitle = styled.h1`
   font-size: 56px;
   font-weight: 800;
   color: white;
-  margin: 0 0 24px 0;
+  margin-bottom: 20px;
   line-height: 1.2;
 
-  //   span {
-  //     background: linear-gradient(120deg, #ffd89b 0%, #19547b 100%);
-  //     -webkit-background-clip: text;
-  //     -webkit-text-fill-color: transparent;
-  //     background-clip: text;
-  //   }
+  span {
+    background: linear-gradient(120deg, #ffd89b 0%, #19547b 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
 
   @media (max-width: 768px) {
-    font-size: 40px;
+    font-size: 42px;
   }
 `;
 
 const HeroSubtitle = styled.p`
   font-size: 20px;
   color: rgba(255, 255, 255, 0.9);
-  margin: 0 0 40px 0;
+  margin-bottom: 40px;
   line-height: 1.6;
-
-  @media (max-width: 768px) {
-    font-size: 18px;
-  }
 `;
 
 const HeroButtons = styled.div`
   display: flex;
   gap: 16px;
-
-  @media (max-width: 768px) {
-    flex-direction: column;
-    width: 100%;
-  }
+  flex-wrap: wrap;
 `;
 
 const PrimaryButton = styled.button`
-  padding: 16px 40px;
   background: white;
   color: #667eea;
+  padding: 14px 36px;
   border: none;
   border-radius: 12px;
   font-size: 16px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 6px 15px rgba(255, 255, 255, 0.25);
 
   &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
-  }
-
-  &:active {
-    transform: translateY(0);
+    transform: scale(1.05);
   }
 `;
 
-const SecondaryButton = styled.button`
-  padding: 16px 40px;
+const SecondaryButton = styled(PrimaryButton)`
   background: transparent;
-  color: white;
   border: 2px solid white;
-  border-radius: 12px;
-  font-size: 16px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
+  color: white;
 
   &:hover {
     background: white;
     color: #667eea;
-    transform: translateY(-2px);
-  }
-
-  &:active {
-    transform: translateY(0);
   }
 `;
 
@@ -282,20 +224,10 @@ const HeroImage = styled.div`
   align-items: center;
 `;
 
-const ImagePlaceholder = styled.div`
-  width: 400px;
-  height: 400px;
-  animation: float 3s ease-in-out infinite;
-
-  @keyframes float {
-    0%,
-    100% {
-      transform: translateY(0px);
-    }
-    50% {
-      transform: translateY(-20px);
-    }
-  }
+const AnimatedSVG = styled.div`
+  width: 380px;
+  height: 380px;
+  animation: ${float} 5s ease-in-out infinite;
 
   @media (max-width: 768px) {
     width: 300px;
@@ -304,213 +236,168 @@ const ImagePlaceholder = styled.div`
 `;
 
 const FeaturesSection = styled.section`
-  padding: 100px 80px;
+  padding: 80px 80px;
   background: #f8f9fa;
-
-  @media (max-width: 768px) {
-    padding: 60px 20px;
-  }
+  text-align: center;
 `;
 
 const SectionTitle = styled.h2`
-  font-size: 42px;
+  font-size: 40px;
   font-weight: 700;
   color: #1a1a1a;
-  text-align: center;
-  margin: 0 0 60px 0;
-
-  @media (max-width: 768px) {
-    font-size: 32px;
-  }
+  margin-bottom: 60px;
 `;
 
 const FeaturesGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 40px;
-  max-width: 1200px;
-  margin: 0 auto;
 `;
 
 const FeatureCard = styled.div`
   background: white;
   padding: 40px;
   border-radius: 16px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 6px 25px rgba(0, 0, 0, 0.08);
   transition: all 0.3s ease;
-
-  &:hover {
-    transform: translateY(-8px);
-    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
-  }
 `;
 
 const IconWrapper = styled.div`
   width: 70px;
   height: 70px;
-  background: ${(props) => props.color}20;
-  color: ${(props) => props.color};
-  border-radius: 16px;
+  border-radius: 50%;
+  background: ${(p) => `${p.color}22`};
+  color: ${(p) => p.color};
+  font-size: 32px;
   display: flex;
-  align-items: center;
   justify-content: center;
-  margin-bottom: 24px;
+  align-items: center;
+  margin: 0 auto 20px;
 `;
 
 const FeatureTitle = styled.h3`
-  font-size: 24px;
+  font-size: 22px;
   font-weight: 700;
   color: #1a1a1a;
-  margin: 0 0 16px 0;
+  margin-bottom: 10px;
 `;
 
 const FeatureDescription = styled.p`
   font-size: 16px;
-  color: #666;
+  color: #555;
   line-height: 1.6;
-  margin: 0;
 `;
 
 const StatsSection = styled.section`
-  padding: 80px 80px;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-
-  @media (max-width: 768px) {
-    padding: 60px 20px;
-  }
+  padding: 80px 60px;
+  color: white;
 `;
 
 const StatsGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 40px;
-  max-width: 1200px;
-  margin: 0 auto;
-`;
-
-const StatCard = styled.div`
   text-align: center;
 `;
 
+const StatCard = styled.div``;
 const StatNumber = styled.div`
   font-size: 48px;
   font-weight: 800;
-  color: white;
-  margin-bottom: 8px;
-
-  @media (max-width: 768px) {
-    font-size: 36px;
-  }
 `;
-
 const StatLabel = styled.div`
   font-size: 18px;
-  color: rgba(255, 255, 255, 0.9);
-  font-weight: 500;
+  opacity: 0.9;
 `;
 
 const CTASection = styled.section`
-  padding: 100px 80px;
-  background: #1a1a1a;
-
-  @media (max-width: 768px) {
-    padding: 60px 20px;
-  }
+  background: #f3f4f6;
+  padding: 100px 60px;
+  display: flex;
+  justify-content: center;
 `;
 
-const CTAContent = styled.div`
-  max-width: 800px;
-  margin: 0 auto;
+const CTAContainer = styled.div`
+  background: white;
+  padding: 80px 60px;
+  border-radius: 20px;
   text-align: center;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+  max-width: 800px;
 `;
 
 const CTATitle = styled.h2`
-  font-size: 42px;
-  font-weight: 700;
-  color: white;
-  margin: 0 0 24px 0;
-
-  @media (max-width: 768px) {
-    font-size: 32px;
-  }
+  font-size: 38px;
+  color: #1a1a1a;
+  margin-bottom: 20px;
 `;
 
 const CTADescription = styled.p`
-  font-size: 20px;
-  color: rgba(255, 255, 255, 0.8);
-  margin: 0 0 40px 0;
+  font-size: 18px;
+  color: #444;
+  margin-bottom: 40px;
   line-height: 1.6;
-
-  @media (max-width: 768px) {
-    font-size: 18px;
-  }
 `;
 
 const CTAButton = styled.button`
-  padding: 18px 48px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #667eea, #764ba2);
   color: white;
   border: none;
+  padding: 16px 48px;
   border-radius: 12px;
   font-size: 18px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
-
-  &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 25px rgba(102, 126, 234, 0.6);
-  }
-
-  &:active {
-    transform: translateY(0);
-  }
+  transition: 0.3s ease;
 `;
 
 const Footer = styled.footer`
   background: #0f0f0f;
-  padding: 40px 80px;
-
-  @media (max-width: 768px) {
-    padding: 40px 20px;
-  }
+  padding: 60px 20px;
+  text-align: center;
 `;
 
 const FooterContent = styled.div`
-  max-width: 1200px;
-  margin: 0 auto;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 24px;
+  gap: 20px;
 `;
 
 const FooterBrand = styled.div`
+  color: white;
   font-size: 24px;
   font-weight: 700;
-  color: white;
 `;
 
 const FooterLinks = styled.div`
   display: flex;
-  gap: 32px;
+  gap: 24px;
   flex-wrap: wrap;
   justify-content: center;
-`;
 
-const FooterLink = styled.a`
-  color: rgba(255, 255, 255, 0.7);
-  text-decoration: none;
-  font-size: 15px;
-  transition: color 0.2s ease;
-
-  &:hover {
-    color: white;
+  a {
+    color: rgba(255, 255, 255, 0.7);
+    text-decoration: none;
+    &:hover {
+      color: white;
+    }
   }
 `;
 
 const FooterCopyright = styled.div`
   color: rgba(255, 255, 255, 0.5);
   font-size: 14px;
+`;
+const FooterLink = styled.a`
+  color: rgba(255, 255, 255, 0.7);
+  text-decoration: none;
+  font-size: 15px;
+  font-weight: 500;
+  transition: color 0.25s ease;
+
+  &:hover {
+    color: white;
+  }
 `;

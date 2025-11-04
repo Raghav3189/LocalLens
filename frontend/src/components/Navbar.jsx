@@ -1,8 +1,8 @@
 import React, { useContext, useState } from "react";
 import styled from "styled-components";
-import Button from "./Button";
 import { useNavigate } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
+import BorderButton from "./BorderButton";
 
 const Navbar = () => {
   const navigate = useNavigate();
@@ -12,15 +12,22 @@ const Navbar = () => {
   return (
     <NavbarContainer>
       <NavbarContent>
+        {/* Brand */}
         <Brand onClick={() => navigate("/")}>
           <BrandIcon>
             <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
-              <circle cx="12" cy="12" r="10" stroke="url(#gradient)" strokeWidth="2"/>
-              <path d="M12 6 L16 12 L12 18 L8 12 Z" fill="url(#gradient)"/>
+              <circle
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="url(#gradient)"
+                strokeWidth="2"
+              />
+              <path d="M12 6 L16 12 L12 18 L8 12 Z" fill="url(#gradient)" />
               <defs>
                 <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor="#667eea"/>
-                  <stop offset="100%" stopColor="#764ba2"/>
+                  <stop offset="0%" stopColor="#667eea" />
+                  <stop offset="100%" stopColor="#764ba2" />
                 </linearGradient>
               </defs>
             </svg>
@@ -28,6 +35,7 @@ const Navbar = () => {
           <BrandText>LocalLens</BrandText>
         </Brand>
 
+        {/* Navigation Links */}
         <NavList className={mobileMenuOpen ? "open" : ""}>
           <NavItem onClick={() => { navigate("/"); setMobileMenuOpen(false); }}>
             Home
@@ -46,22 +54,41 @@ const Navbar = () => {
               Profile
             </NavItem>
           )}
+
+          {/* ✅ Mobile Sign In / Logout button */}
+          <MobileButtonContainer>
+            {!user ? (
+              <BorderButton
+                onClick={() => {
+                  navigate("/login");
+                  setMobileMenuOpen(false);
+                }}
+              >
+                Sign In
+              </BorderButton>
+            ) : (
+              <BorderButton
+                onClick={() => {
+                  logout();
+                  setMobileMenuOpen(false);
+                }}
+              >
+                Logout
+              </BorderButton>
+            )}
+          </MobileButtonContainer>
         </NavList>
 
+        {/* Desktop Buttons */}
         <ButtonGroup>
           {!user ? (
-            <>
-              <LoginButton onClick={() => navigate("/login")}>
-                Sign In
-              </LoginButton>
-            </>
+            <BorderButton onClick={() => navigate("/login")}>Sign In</BorderButton>
           ) : (
-            <>
-              <Button text="Logout" onClick={logout} />
-            </>
+            <BorderButton onClick={logout}>Logout</BorderButton>
           )}
         </ButtonGroup>
 
+        {/* Mobile Menu Button */}
         <MobileMenuButton onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
           <span></span>
           <span></span>
@@ -73,6 +100,8 @@ const Navbar = () => {
 };
 
 export default Navbar;
+
+/* ------------------- Styled Components ------------------- */
 
 const NavbarContainer = styled.nav`
   background: rgba(255, 255, 255, 0.95);
@@ -203,28 +232,20 @@ const ButtonGroup = styled.div`
   }
 `;
 
-const LoginButton = styled.button`
-  padding: 10px 24px;
-  background: transparent;
-  color: #667eea;
-  border: 2px solid #667eea;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 15px;
-  font-weight: 600;
-  transition: all 0.2s ease;
+const MobileButtonContainer = styled.div`
+  display: none;
 
-  &:hover {
-    background: #667eea;
-    color: white;
-    transform: translateY(-1px);
-  }
+  @media (max-width: 968px) {
+    display: flex;
+    justify-content: center;
+    margin-top: 20px;
 
-  &:active {
-    transform: translateY(0);
+    button {
+      width: 100%;
+      justify-content: center;
+    }
   }
 `;
-
 
 const MobileMenuButton = styled.button`
   display: none;

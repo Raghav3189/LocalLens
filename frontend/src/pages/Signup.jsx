@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import axios from "axios";
-import Button from "../components/Button";
+import FilledButton from "../components/FilledButton";
 import Navbar from "../components/Navbar";
 import styled from "styled-components";
 import { useNavigate } from "react-router-dom";
@@ -96,7 +96,7 @@ const Signup = () => {
                 />
               </InputGroup>
 
-              <Button text="Sign Up" type="submit" loading={loading} />
+              <FilledButton text="Sign Up" type="submit" loading={loading} />
             </Form>
 
             {message && (

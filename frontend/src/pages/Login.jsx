@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import styled from "styled-components";
-import Button from "../components/Button";
+import FilledButton from "../components/FilledButton";
 import Navbar from "../components/Navbar";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
@@ -40,7 +40,7 @@ const Login = () => {
         formData
       );
 
-      login(res.data.user);
+      login(res.data.user, res.data.token);
 
       setMessage("Login Successful");
 
@@ -93,7 +93,7 @@ const Login = () => {
                 Forgot password?
               </ForgotPassword>
 
-              <Button type="submit" text="Sign In" loading={loading} />
+              <FilledButton type="submit" text="Sign In" loading={loading} />
             </Form>
 
             {message && (

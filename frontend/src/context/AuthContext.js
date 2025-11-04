@@ -8,16 +8,20 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
 
   // Login: set the logged-in user
-  const login = (userData) => {
-    setUser(userData);
-    localStorage.setItem("user", JSON.stringify(userData));
-  };
+  const login = (userData, token) => {
+  setUser(userData);
+  localStorage.setItem("user", JSON.stringify(userData));
+  localStorage.setItem("token", token);
+};
+
 
   // Logout: clear user and local storage
   const logout = () => {
-    setUser(null);
-    localStorage.removeItem("user");
-  };
+  setUser(null);
+  localStorage.removeItem("user");
+  localStorage.removeItem("token"); // remove token as well
+};
+
 
   // On refresh: check localStorage for existing user
   React.useEffect(() => {
