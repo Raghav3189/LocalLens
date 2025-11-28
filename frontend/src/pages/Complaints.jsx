@@ -35,7 +35,7 @@ const Complaints = () => {
       setLoading(true);
       try {
         const res = await axios.get(
-          `http://localhost:5000/api/posts/nearby?latitude=${userLocation.latitude}&longitude=${userLocation.longitude}&radius=${radius}`
+          `${process.env.REACT_APP_API_URL}/api/posts/nearby?latitude=${userLocation.latitude}&longitude=${userLocation.longitude}&radius=${radius}`
         );
         setPosts(res.data.posts || []);
         setPopularPosts((res.data.posts || []).slice(0, 3));

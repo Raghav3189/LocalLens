@@ -23,7 +23,7 @@ const PostDetails = () => {
   useEffect(() => {
     const fetchPost = async () => {
       try {
-        const res = await axios.get(`http://localhost:5000/api/posts/${id}`, {
+        const res = await axios.get(`${process.env.REACT_APP_API_URL}/api/posts/${id}`, {
           headers: token ? { Authorization: `Bearer ${token}` } : {},
         });
 
@@ -49,7 +49,7 @@ const PostDetails = () => {
 
     const fetchTopPosts = async () => {
       try {
-        const res = await axios.get("http://localhost:5000/api/posts/top");
+        const res = await axios.get(`${process.env.REACT_APP_API_URL}/api/posts/top`);
         setTopPosts(res.data.posts || res.data);
       } catch (err) {
         console.error("Error fetching top posts:", err);
@@ -69,7 +69,7 @@ const PostDetails = () => {
     setLiking(true);
     try {
       const res = await axios.put(
-        `http://localhost:5000/api/posts/${id}/like`,
+        `${process.env.REACT_APP_API_URL}/api/posts/${id}/like`,
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -101,7 +101,7 @@ const PostDetails = () => {
     setCommenting(true);
     try {
       const res = await axios.post(
-        `http://localhost:5000/api/posts/${id}/comment`,
+        `${process.env.REACT_APP_API_URL}/api/posts/${id}/comment`,
         { text: comment },
         { headers: { Authorization: `Bearer ${token}` } }
       );
