@@ -1,13 +1,18 @@
 import React, { useContext, useState } from "react";
 import styled from "styled-components";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom"; // Import useLocation
 import { AuthContext } from "../context/AuthContext";
 import BorderButton from "./BorderButton";
 
 const Navbar = () => {
   const navigate = useNavigate();
+  const location = useLocation(); // Get the current location (active page)
   const { user, logout } = useContext(AuthContext);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const getNavItemClass = (path) => {
+    return location.pathname === path ? "active" : "";
+  };
 
   return (
     <NavbarContainer>
@@ -37,25 +42,40 @@ const Navbar = () => {
 
         {/* Navigation Links */}
         <NavList className={mobileMenuOpen ? "open" : ""}>
-          <NavItem onClick={() => { navigate("/"); setMobileMenuOpen(false); }}>
+          <NavItem
+            className={getNavItemClass("/")}
+            onClick={() => { navigate("/"); setMobileMenuOpen(false); }}
+          >
             Home
           </NavItem>
-          <NavItem onClick={() => { navigate("/complaints"); setMobileMenuOpen(false); }}>
+          <NavItem
+            className={getNavItemClass("/complaints")}
+            onClick={() => { navigate("/complaints"); setMobileMenuOpen(false); }}
+          >
             Complaints
           </NavItem>
-          <NavItem onClick={() => { navigate("/marketplace"); setMobileMenuOpen(false); }}>
+          <NavItem
+            className={getNavItemClass("/marketplace")}
+            onClick={() => { navigate("/marketplace"); setMobileMenuOpen(false); }}
+          >
             Marketplace
           </NavItem>
-          <NavItem onClick={() => { navigate("/concerns"); setMobileMenuOpen(false); }}>
+          <NavItem
+            className={getNavItemClass("/concerns")}
+            onClick={() => { navigate("/concerns"); setMobileMenuOpen(false); }}
+          >
             Concerns
           </NavItem>
           {user && (
-            <NavItem onClick={() => { navigate("/profile"); setMobileMenuOpen(false); }}>
+            <NavItem
+              className={getNavItemClass("/profile")}
+              onClick={() => { navigate("/profile"); setMobileMenuOpen(false); }}
+            >
               Profile
             </NavItem>
           )}
 
-          {/* ✅ Mobile Sign In / Logout button */}
+          {/* Mobile Sign In / Logout button */}
           <MobileButtonContainer>
             {!user ? (
               <BorderButton
@@ -208,6 +228,14 @@ const NavItem = styled.li`
     width: 100%;
   }
 
+  &.active {
+    color: #667eea;
+    font-weight: bold;
+    &::after {
+      width: 100%;
+    }
+  }
+
   @media (max-width: 968px) {
     padding: 16px 0;
     border-bottom: 1px solid #f0f0f0;
@@ -268,3 +296,4 @@ const MobileMenuButton = styled.button`
     display: flex;
   }
 `;
+

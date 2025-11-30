@@ -5,14 +5,14 @@ import Navbar from "../components/Navbar";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import Alert from "../components/Alert";
 
 const Login = () => {
+  const [alert,setAlert] = useState({ show: false, message: "", type: "" });
   const [formData, setFormData] = useState({
     email: "",
     password: "",
   });
-
-  const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
 
   const { login } = useAuth();
@@ -26,35 +26,33 @@ const Login = () => {
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+  e.preventDefault();
 
-    if (!formData.email || !formData.password) {
-      setMessage("Please fill all fields");
-      return;
+  if (!formData.email || !formData.password) {
+    setAlert({ show: true, message: "Please fill all fields", type: "error" });
+    return;
+  }
+
+  setLoading(true);
+  try {
+    const res = await axios.post("http://localhost:5000/api/auth/login", formData);
+    login(res.data.user, res.data.token);
+    setAlert({ show: true, message: "Login Successful", type: "success" });
+    setTimeout(() => navigate("/"), 2000);
+  } catch (err) {
+    if (err.response) {
+      setAlert({
+        show: true,
+        message: err.response.data.message || "Login failed",
+        type: "error",
+      });
+    } else {
+      setAlert({ show: true, message: "Server not reachable", type: "error" });
     }
-
-    setLoading(true);
-    try {
-      const res = await axios.post(
-        "http://localhost:5000/api/auth/login",
-        formData
-      );
-
-      login(res.data.user, res.data.token);
-
-      setMessage("Login Successful");
-
-      setTimeout(() => navigate("/"), 1000);
-    } catch (err) {
-      if (err.response) {
-        setMessage(err.response.data.message || "Login failed");
-      } else {
-        setMessage("Server not reachable");
-      }
-      console.error("Login Error:", err.response?.data || err.message);
-    } finally {
-      setLoading(false);
-    }
+    console.error("Login Error:", err.response?.data || err.message);
+  } finally {
+    setLoading(false);
+  }
   };
 
   return (
@@ -96,24 +94,24 @@ const Login = () => {
               <FilledButton type="submit" text="Sign In" loading={loading} />
             </Form>
 
-            {message && (
-              <Message success={message.includes("Successful")}>
-                {message}
-              </Message>
-            )}
-
             <SignupLink>
               Don't have an account? <a href="/signup">Sign Up</a>
             </SignupLink>
           </FormCard>
         </LoginContainer>
       </PageWrapper>
+      {alert.show && (
+        <Alert
+          message={alert.message}
+          type={alert.type}
+          onClose={() => setAlert({ show: false, message: "", type: "" })}
+        />
+      )}
     </>
   );
 };
 
 export default Login;
-
 
 const PageWrapper = styled.div`
   min-height: calc(100vh - 70px);
@@ -197,20 +195,6 @@ const ForgotPassword = styled.a`
   &:hover {
     text-decoration: underline;
   }
-`;
-
-const Message = styled.p`
-  margin-top: 20px;
-  padding: 12px 16px;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 500;
-  text-align: center;
-  background-color: ${(props) =>
-    props.success ? "#d4edda" : "#f8d7da"};
-  color: ${(props) => (props.success ? "#155724" : "#721c24")};
-  border: 1px solid
-    ${(props) => (props.success ? "#c3e6cb" : "#f5c6cb")};
 `;
 
 const SignupLink = styled.p`

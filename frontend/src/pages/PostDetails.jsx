@@ -6,6 +6,7 @@ import Navbar from "../components/Navbar";
 import Slider from "react-slick";
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
+import Alert from "../components/Alert";
 
 const PostDetails = () => {
   const { id } = useParams();
@@ -17,6 +18,7 @@ const PostDetails = () => {
   const [liked, setLiked] = useState(false);
   const [liking, setLiking] = useState(false);
   const [commenting, setCommenting] = useState(false);
+  const [alert, setAlert] = useState({ show: false, message: "", type: "" });
 
   const token = localStorage.getItem("token");
 
@@ -62,7 +64,11 @@ const PostDetails = () => {
 
   const handleLike = async () => {
     if (!token) {
-      alert("Please log in to like posts");
+      setAlert({
+        show: true,
+        message: "Please log in to like posts",
+        type: "error",
+      });
       return;
     }
 
@@ -92,7 +98,11 @@ const PostDetails = () => {
     e.preventDefault();
 
     if (!token) {
-      alert("Please log in to comment");
+      setAlert({
+        show: true,
+        message: "Please log in to comment",
+        type: "error",
+      });
       return;
     }
 
@@ -147,14 +157,23 @@ const PostDetails = () => {
         <Navbar />
         <ErrorContainer>
           <ErrorIcon>
-            <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <circle cx="12" cy="12" r="10"/>
-              <line x1="15" y1="9" x2="9" y2="15"/>
-              <line x1="9" y1="9" x2="15" y2="15"/>
+            <svg
+              width="80"
+              height="80"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <circle cx="12" cy="12" r="10" />
+              <line x1="15" y1="9" x2="9" y2="15" />
+              <line x1="9" y1="9" x2="15" y2="15" />
             </svg>
           </ErrorIcon>
           <ErrorTitle>Post Not Found</ErrorTitle>
-          <ErrorText>The post you're looking for doesn't exist or has been removed.</ErrorText>
+          <ErrorText>
+            The post you're looking for doesn't exist or has been removed.
+          </ErrorText>
           <BackButton onClick={() => navigate("/complaints")}>
             ← Back to Complaints
           </BackButton>
@@ -171,8 +190,15 @@ const PostDetails = () => {
           <PostCard>
             <PostHeader>
               <BackLink onClick={() => navigate("/complaints")}>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M19 12H5M12 19l-7-7 7-7"/>
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <path d="M19 12H5M12 19l-7-7 7-7" />
                 </svg>
                 Back
               </BackLink>
@@ -187,7 +213,11 @@ const PostDetails = () => {
                   {post.images.map((img, index) => (
                     <ImageWrapper key={index}>
                       <PostImage
-                        src={img.startsWith("http") ? img : `http://localhost:5000${img}`}
+                        src={
+                          img.startsWith("http")
+                            ? img
+                            : `http://localhost:5000${img}`
+                        }
                         alt={`post-${index}`}
                       />
                     </ImageWrapper>
@@ -215,7 +245,9 @@ const PostDetails = () => {
                   <ButtonSpinner />
                 ) : (
                   <>
-                    <ButtonIcon $animate={liked}>{liked ? "💖" : "🤍"}</ButtonIcon>
+                    <ButtonIcon $animate={liked}>
+                      {liked ? "💖" : "🤍"}
+                    </ButtonIcon>
                     <span>{liked ? "Liked" : "Like"}</span>
                   </>
                 )}
@@ -226,7 +258,9 @@ const PostDetails = () => {
           <CommentsCard>
             <SectionHeader>
               <SectionIcon>💬</SectionIcon>
-              <SectionTitle>Comments ({post.comments?.length || 0})</SectionTitle>
+              <SectionTitle>
+                Comments ({post.comments?.length || 0})
+              </SectionTitle>
             </SectionHeader>
 
             <CommentForm onSubmit={handleComment}>
@@ -238,7 +272,10 @@ const PostDetails = () => {
                   onChange={(e) => setComment(e.target.value)}
                   disabled={commenting}
                 />
-                <SubmitButton type="submit" disabled={commenting || !comment.trim()}>
+                <SubmitButton
+                  type="submit"
+                  disabled={commenting || !comment.trim()}
+                >
                   {commenting ? <ButtonSpinner small /> : "Post"}
                 </SubmitButton>
               </CommentInputWrapper>
@@ -248,7 +285,9 @@ const PostDetails = () => {
               {post.comments && post.comments.length > 0 ? (
                 post.comments.map((c, i) => (
                   <CommentItem key={i}>
-                    <CommentAvatar>{c.user?.charAt(0).toUpperCase() || "U"}</CommentAvatar>
+                    <CommentAvatar>
+                      {c.user?.charAt(0).toUpperCase() || "U"}
+                    </CommentAvatar>
                     <CommentContent>
                       <CommentAuthor>{c.user || "Anonymous"}</CommentAuthor>
                       <CommentText>{c.text}</CommentText>
@@ -258,7 +297,9 @@ const PostDetails = () => {
               ) : (
                 <EmptyComments>
                   <EmptyIcon>💬</EmptyIcon>
-                  <EmptyText>No comments yet. Be the first to comment!</EmptyText>
+                  <EmptyText>
+                    No comments yet. Be the first to comment!
+                  </EmptyText>
                 </EmptyComments>
               )}
             </CommentList>
@@ -274,7 +315,10 @@ const PostDetails = () => {
             {topPosts && topPosts.length > 0 ? (
               <TopPostList>
                 {topPosts.slice(0, 5).map((p, index) => (
-                  <TopPostItem key={p._id} onClick={() => navigate(`/post/${p._id}`)}>
+                  <TopPostItem
+                    key={p._id}
+                    onClick={() => navigate(`/post/${p._id}`)}
+                  >
                     <TopPostContent>
                       <TopPostTitle>{p.title}</TopPostTitle>
                       <TopPostLikes>
@@ -296,12 +340,20 @@ const PostDetails = () => {
           <InfoCard>
             <InfoTitle>Need Help?</InfoTitle>
             <InfoText>
-              Report inappropriate content or reach out to community moderators for assistance.
+              Report inappropriate content or reach out to community moderators
+              for assistance.
             </InfoText>
             <ReportButton>Report Issue</ReportButton>
           </InfoCard>
         </Sidebar>
       </Container>
+      {alert.show && (
+        <Alert
+          message={alert.message}
+          type={alert.type}
+          onClose={() => setAlert({ show: false, message: "", type: "" })}
+        />
+      )}
     </>
   );
 };
@@ -410,7 +462,7 @@ const StyledSlider = styled(Slider)`
 
   .slick-slide {
     height: auto;
-    
+
     > div {
       height: 100%;
     }
@@ -500,7 +552,7 @@ const StatItem = styled.div`
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
   transition: all 0.2s ease;
-  justify-content:center;
+  justify-content: center;
 `;
 
 const StatIcon = styled.span`
@@ -518,7 +570,7 @@ const ActionBar = styled.div`
   gap: 12px;
   flex-wrap: wrap;
   align-items: center;
-  justify-content:center;
+  justify-content: center;
 `;
 
 const LikeButton = styled.button`
@@ -545,26 +597,38 @@ const ButtonIcon = styled.span`
   font-size: 24px;
   position: relative;
   z-index: 1;
-  animation: ${props => props.$animate ? 'heartbeat 0.6s ease-in-out' : 'none'};
+  animation: ${(props) =>
+    props.$animate ? "heartbeat 0.6s ease-in-out" : "none"};
 
   @keyframes heartbeat {
-    0%, 100% { transform: scale(1); }
-    25% { transform: scale(1.3); }
-    50% { transform: scale(1.1); }
-    75% { transform: scale(1.2); }
+    0%,
+    100% {
+      transform: scale(1);
+    }
+    25% {
+      transform: scale(1.3);
+    }
+    50% {
+      transform: scale(1.1);
+    }
+    75% {
+      transform: scale(1.2);
+    }
   }
 `;
 
 const ButtonSpinner = styled.div`
-  width: ${props => props.small ? '16px' : '20px'};
-  height: ${props => props.small ? '16px' : '20px'};
+  width: ${(props) => (props.small ? "16px" : "20px")};
+  height: ${(props) => (props.small ? "16px" : "20px")};
   border: 3px solid rgba(255, 255, 255, 0.3);
   border-top-color: white;
   border-radius: 50%;
   animation: spin 0.6s linear infinite;
 
   @keyframes spin {
-    to { transform: rotate(360deg); }
+    to {
+      transform: rotate(360deg);
+    }
   }
 `;
 
@@ -618,7 +682,7 @@ const CommentInput = styled.input`
   border-radius: 12px;
   font-size: 15px;
   transition: all 0.2s ease;
-  background: ${props => props.disabled ? '#f8f9fa' : 'white'};
+  background: ${(props) => (props.disabled ? "#f8f9fa" : "white")};
 
   &:focus {
     outline: none;
@@ -644,17 +708,18 @@ const SubmitButton = styled.button`
   border-radius: 12px;
   font-size: 15px;
   font-weight: 700;
-  cursor: ${props => props.disabled ? 'not-allowed' : 'pointer'};
+  cursor: ${(props) => (props.disabled ? "not-allowed" : "pointer")};
   transition: all 0.3s ease;
   min-width: 100px;
   display: flex;
   align-items: center;
   justify-content: center;
-  opacity: ${props => props.disabled ? 0.6 : 1};
+  opacity: ${(props) => (props.disabled ? 0.6 : 1)};
 
   &:hover {
-    transform: ${props => props.disabled ? 'none' : 'translateY(-2px)'};
-    box-shadow: ${props => props.disabled ? 'none' : '0 6px 20px rgba(102, 126, 234, 0.4)'};
+    transform: ${(props) => (props.disabled ? "none" : "translateY(-2px)")};
+    box-shadow: ${(props) =>
+      props.disabled ? "none" : "0 6px 20px rgba(102, 126, 234, 0.4)"};
   }
 
   @media (max-width: 480px) {
@@ -676,12 +741,6 @@ const CommentItem = styled.div`
   border-radius: 16px;
   border: 2px solid #f0f0f0;
   transition: all 0.3s ease;
-
-  &:hover {
-    border-color: #e2e8f0;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
-    transform: translateX(4px);
-  }
 `;
 
 const CommentAvatar = styled.div`
@@ -839,7 +898,6 @@ const InfoCard = styled.div`
   color: white;
 `;
 
-
 const InfoTitle = styled.h4`
   font-size: 16px;
   font-weight: 700;
@@ -889,7 +947,9 @@ const Spinner = styled.div`
   animation: spin 0.8s linear infinite;
 
   @keyframes spin {
-    to { transform: rotate(360deg); }
+    to {
+      transform: rotate(360deg);
+    }
   }
 `;
 
@@ -938,9 +998,4 @@ const BackButton = styled.button`
   font-weight: 700;
   cursor: pointer;
   transition: all 0.3s ease;
-
-  &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
-  }
 `;

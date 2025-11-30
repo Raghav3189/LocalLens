@@ -3,30 +3,31 @@ import axios from "axios";
 import FilledButton from "../components/FilledButton";
 import Navbar from "../components/Navbar";
 import styled from "styled-components";
+import Alert from "../components/Alert";
 import { useNavigate } from "react-router-dom";
 
 const Signup = () => {
+  const navigate = useNavigate();
+  const [alert, setAlert] = useState(null); // single source of truth
   const [formData, setFormData] = useState({
     name: "",
     email: "",
     password: "",
   });
-  const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
-  const navigate = useNavigate();
 
   const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (!formData.name || !formData.email || !formData.password) {
-      setMessage("Please fill all fields");
+      setAlert({
+        type: "error",
+        message: "Please fill all fields.",
+      });
       return;
     }
 
@@ -36,17 +37,21 @@ const Signup = () => {
         "http://localhost:5000/api/auth/register",
         formData
       );
-      setMessage("Signup Successful! Redirecting to login...");
       console.log("Response:", res.data);
-
       setFormData({ name: "", email: "", password: "" });
-      setTimeout(() => navigate("/login"), 1500);
+      setAlert({
+        type: "success",
+        message: "Signup successful! Redirecting to login...",
+        redirectTo: "/login",
+      });
+      setTimeout(() => navigate("/"), 2000);
     } catch (err) {
-      if (err.response) {
-        setMessage(err.response.data.message || "Signup failed");
-      } else {
-        setMessage("Server not reachable");
-      }
+      setAlert({
+        type: "error",
+        message:
+          err.response?.data?.message ||
+          "Signup failed. Please try again later.",
+      });
       console.error("Signup Error:", err.response?.data || err.message);
     } finally {
       setLoading(false);
@@ -61,7 +66,6 @@ const Signup = () => {
           <FormCard>
             <Title>Create Account</Title>
             <Subtitle>Join us today and get started</Subtitle>
-            
             <Form onSubmit={handleSubmit}>
               <InputGroup>
                 <Label>Full Name</Label>
@@ -99,24 +103,28 @@ const Signup = () => {
               <FilledButton text="Sign Up" type="submit" loading={loading} />
             </Form>
 
-            {message && (
-              <Message success={message.includes("Successful")}>
-                {message}
-              </Message>
-            )}
-
             <SigninLink>
               Already have an account? <a href="/login">Sign In</a>
             </SigninLink>
           </FormCard>
         </SignupContainer>
       </PageWrapper>
+
+      {alert && (
+        <Alert
+          type={alert.type}
+          message={alert.message}
+          redirectTo={alert.redirectTo}
+          onClose={() => setAlert(null)}
+        />
+      )}
     </>
   );
 };
 
 export default Signup;
 
+// Styled components same as yours below ↓
 const PageWrapper = styled.div`
   min-height: calc(100vh - 70px);
   display: flex;
@@ -188,18 +196,6 @@ const Input = styled.input`
   }
 `;
 
-const Message = styled.p`
-  margin-top: 20px;
-  padding: 12px 16px;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 500;
-  text-align: center;
-  background-color: ${props => props.success ? '#d4edda' : '#f8d7da'};
-  color: ${props => props.success ? '#155724' : '#721c24'};
-  border: 1px solid ${props => props.success ? '#c3e6cb' : '#f5c6cb'};
-`;
-
 const SigninLink = styled.p`
   margin-top: 24px;
   text-align: center;
@@ -210,7 +206,7 @@ const SigninLink = styled.p`
     color: #007bff;
     text-decoration: none;
     font-weight: 600;
-    
+
     &:hover {
       text-decoration: underline;
     }

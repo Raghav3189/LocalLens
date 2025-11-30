@@ -19,25 +19,16 @@ const {
 //.array("images", 5) : tells Multer to expect multiple files under the field name "images", and allow up to 5 files max
 router.post("/create", upload.array("images", 5), createPost);
 
-// 📊 Top posts — specific route first
 router.get("/top", getTopPosts);
 
-// 🧭 Nearby posts
 router.get("/nearby", getNearbyPosts);
 
-// 📋 All posts
 router.get("/", getAllPosts);
 
-// 🔍 Single post by ID
 router.get("/:id", getPostById);
 
-// ❤️ Like a post
 router.put("/:id/like",protect, likePost);
 
-// 💬 Comment on a post
 router.post("/:id/comment",protect, commentOnPost);
-
-
-
 
 module.exports = router;

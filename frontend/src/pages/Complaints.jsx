@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
-import Button from "../components/FilledButton"
+import Button from "../components/FilledButton";
 
 const Complaints = () => {
   const [posts, setPosts] = useState([]);
@@ -18,12 +18,15 @@ const Complaints = () => {
   useEffect(() => {
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        setUserLocation({
+        const newLocation = {
           latitude: position.coords.latitude,
           longitude: position.coords.longitude,
-        });
+        };
+        setUserLocation(newLocation);
+        console.log("New location set:", newLocation);
       },
-      () => {
+      (error) => {
+        console.error("Geolocation error:", error);
         alert("Please allow location access to view nearby posts.");
       }
     );
@@ -32,11 +35,15 @@ const Complaints = () => {
   useEffect(() => {
     const fetchPosts = async () => {
       if (!userLocation) return;
+      console.log("hi");
+      console.log(userLocation);
+      console.log(radius);
       setLoading(true);
       try {
         const res = await axios.get(
           `http://localhost:5000/api/posts/nearby?latitude=${userLocation.latitude}&longitude=${userLocation.longitude}&radius=${radius}`
         );
+        console.log(res.data.posts);
         setPosts(res.data.posts || []);
         setPopularPosts((res.data.posts || []).slice(0, 3));
       } catch (error) {
@@ -44,7 +51,6 @@ const Complaints = () => {
       }
       setLoading(false);
     };
-
     fetchPosts();
   }, [userLocation, radius]);
 
@@ -137,7 +143,7 @@ const Complaints = () => {
                       <PostImageWrapper>
                         {post.images && post.images.length > 0 ? (
                           <PostThumbnail
-                            src={post.images[0]} 
+                            src={post.images[0]}
                             alt={post.title}
                           />
                         ) : (
@@ -206,19 +212,17 @@ const Complaints = () => {
               ) : (
                 <PopularList>
                   {popularPosts.map((p, index) => (
-                    <PopularCard key={p._id} onClick={() => navigate(`/post/${p._id}`)}>
+                    <PopularCard
+                      key={p._id}
+                      onClick={() => navigate(`/post/${p._id}`)}
+                    >
                       <PopularContent>
                         {p.images && p.images.length > 0 && (
-                          <PopularImage
-                            src={p.images[0]} 
-                            alt={p.title}
-                          />
+                          <PopularImage src={p.images[0]} alt={p.title} />
                         )}
                         <PopularInfo>
                           <PopularTitle>{p.title}</PopularTitle>
-                          <PopularDesc>
-                            {p.description}
-                          </PopularDesc>
+                          <PopularDesc>{p.description}</PopularDesc>
                         </PopularInfo>
                       </PopularContent>
                     </PopularCard>
@@ -584,7 +588,6 @@ const PopularCard = styled.div`
   }
 `;
 
-
 const PopularContent = styled.div`
   display: flex;
   gap: 12px;
@@ -612,7 +615,7 @@ const PopularTitle = styled.h4`
   overflow: hidden;
   text-overflow: ellipsis;
   display: -webkit-box;
-  -webkit-line-clamp: 1; 
+  -webkit-line-clamp: 1;
   -webkit-box-orient: vertical;
 `;
 
@@ -623,10 +626,9 @@ const PopularDesc = styled.p`
   overflow: hidden;
   text-overflow: ellipsis;
   display: -webkit-box;
-  -webkit-line-clamp: 2; 
+  -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
 `;
-
 
 const EmptyPopular = styled.div`
   text-align: center;

@@ -5,8 +5,6 @@ const cloudinary = require("cloudinary").v2;
 const createPost = async (req, res) => {
   try {
     //req seperated into body and files by multer
-    console.log("Request body:", req.body);
-    console.log("Uploaded files:", req.files);
 
     const { title, description, latitude, longitude, createdBy } = req.body;
 
@@ -47,27 +45,63 @@ const createPost = async (req, res) => {
 
 const getNearbyPosts = async (req, res) => {
   try {
+    console.log("📍 getNearbyPosts called");
+    console.log("📡 Query parameters:", req.query);
+
     const { latitude, longitude, radius = 5 } = req.query;
 
     if (!latitude || !longitude) {
+      console.log("❌ Missing coordinates");
       return res.status(400).json({ message: "Coordinates required" });
     }
 
-    const userHex = h3.latLngToCell(Number(latitude), Number(longitude), 9);
-    //At resolution 9, each H3 hex = ~0.2 km in diameter.
-    //To cover the full radius area we divide by 0.2.
-    const steps = Math.round(radius / 0.2);
-    //gridDisk() returns all hex indexes within a given number of steps from the center hex.
+    const lat = Number(latitude);
+    const lng = Number(longitude);
+    const searchRadius = Number(radius);
+
+    console.log("📍 Parsed coordinates:", { lat, lng, searchRadius });
+
+    // ✅ Use resolution 8 for good coverage (~0.9 km diameter per hex)
+    const resolution = 8;
+    const userHex = h3.latLngToCell(lat, lng, resolution);
+
+    // ✅ Each hex at res 8 covers ~0.74 km circumradius
+    const hexCircumradiusKm = 0.74;
+    const steps = Math.ceil(searchRadius / hexCircumradiusKm);
+
+    // ✅ Get all nearby hex indexes
     const nearbyHexes = h3.gridDisk(userHex, steps);
 
+    console.log("🔍 H3 Details:");
+    console.log("   - User Hex:", userHex);
+    console.log("   - Resolution:", resolution);
+    console.log("   - Steps calculated:", steps);
+    console.log("   - Nearby Hexes Count:", nearbyHexes.length);
+
+    // 🧾 Optional: Check your DB contents
+    const totalPostCount = await Post.countDocuments();
+    console.log("📊 Total posts in database:", totalPostCount);
+
+    // ✅ Find posts in these hexes
     const posts = await Post.find({
       h3Index: { $in: nearbyHexes },
-    }).sort({ createdAt: -1 });
+    })
+      .sort({ createdAt: -1 })
+      .limit(50); // optional limit to prevent overload
 
-    res.status(200).json({ posts });
+    console.log("✅ Posts found:", posts.length);
 
+    res.status(200).json({
+      posts,
+      metadata: {
+        radius: searchRadius,
+        totalFound: posts.length,
+        searchLocation: { lat, lng },
+        hexesSearched: nearbyHexes.length,
+      },
+    });
   } catch (error) {
-    console.error("Error fetching nearby posts:", error);
+    console.error("❌ Error fetching nearby posts:", error);
     res.status(500).json({ message: "Server error" });
   }
 };

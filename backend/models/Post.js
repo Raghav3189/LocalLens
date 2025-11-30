@@ -56,7 +56,7 @@ const postSchema = new mongoose.Schema(
 
 postSchema.pre("save", function (next) {
   if (this.latitude && this.longitude) {
-    this.h3Index = h3.latLngToCell(this.latitude, this.longitude, 9);
+    this.h3Index = h3.latLngToCell(this.latitude, this.longitude, 8);
   }
   this.likes = this.likedBy.length;
   next();
