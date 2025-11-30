@@ -33,13 +33,19 @@ const Login = () => {
     return;
   }
 
-  setLoading(true);
-  try {
-    const res = await axios.post("http://localhost:5000/api/auth/login", formData);
-    login(res.data.user, res.data.token);
-    setAlert({ show: true, message: "Login Successful", type: "success" });
-    setTimeout(() => navigate("/"), 2000);
-  } catch (err) {
+    setLoading(true);
+    try {
+      const res = await axios.post(
+        `${process.env.REACT_APP_API_URL}/api/auth/login`,
+        formData
+      );
+
+      login(res.data.user, res.data.token);
+
+      setAlert({ show: true, message: "Login Successful", type: "success" });
+
+      setTimeout(() => navigate("/"), 1000);
+    } catch (err) {
     if (err.response) {
       setAlert({
         show: true,
@@ -51,8 +57,8 @@ const Login = () => {
     }
     console.error("Login Error:", err.response?.data || err.message);
   } finally {
-    setLoading(false);
-  }
+      setLoading(false);
+    }
   };
 
   return (

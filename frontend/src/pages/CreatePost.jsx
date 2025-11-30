@@ -102,7 +102,7 @@ const CreatePost = () => {
 
     try {
       const response = await axios.post(
-        "http://localhost:5000/api/posts/create",
+        `${process.env.REACT_APP_API_URL}/api/posts/create`,
         data,
         {
           //tells the backend that files are being uploaded not only text so backend parses it correctly
