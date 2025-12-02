@@ -16,7 +16,6 @@ services:
       - mongo
     networks:
       - locallens-net
-    # no ports exposed → only reachable inside Docker network
 
   frontend:
     build: ./frontend
@@ -24,7 +23,7 @@ services:
     depends_on:
       - backend
     ports:
-      - "3000:80"   # expose frontend to host
+      - "3000:80"  
     networks:
       - locallens-net
 
