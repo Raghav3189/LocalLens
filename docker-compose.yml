@@ -1,15 +1,13 @@
 services:
   mongo:
     image: mongo:6
-    container_name: mongo
     volumes:
       - mongo_data:/data/db
     networks:
       - locallens-net
 
   backend:
-    build: ./backend
-    container_name: backend
+    image: raghav3168/locallens-backend:1.1
     env_file:
       - ./backend/.env
     depends_on:
@@ -18,8 +16,7 @@ services:
       - locallens-net
 
   frontend:
-    build: ./frontend
-    container_name: frontend
+    image: raghav3168/locallens-backend:1.1
     depends_on:
       - backend
     ports:
