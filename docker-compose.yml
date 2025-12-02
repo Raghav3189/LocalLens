@@ -16,7 +16,7 @@ services:
       - locallens-net
 
   frontend:
-    image: raghav3168/locallens-backend:1.1
+    image: raghav3168/locallens-frontend:1.1
     depends_on:
       - backend
     ports:
