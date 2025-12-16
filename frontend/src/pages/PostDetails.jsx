@@ -11,26 +11,39 @@ import Alert from "../components/Alert";
 const PostDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+
   const [post, setPost] = useState(null);
-  const [topPosts, setTopPosts] = useState([]);
   const [comment, setComment] = useState("");
   const [loading, setLoading] = useState(true);
+
   const [liked, setLiked] = useState(false);
   const [liking, setLiking] = useState(false);
   const [commenting, setCommenting] = useState(false);
-  const [alert, setAlert] = useState({ show: false, message: "", type: "" });
+
+  const [alert, setAlert] = useState({
+    show: false,
+    message: "",
+    type: "",
+  });
 
   const token = localStorage.getItem("token");
 
+  /* ================= FETCH ================= */
+
   useEffect(() => {
-    const fetchPost = async () => {
+    const fetchData = async () => {
       try {
-        const res = await axios.get(`${process.env.REACT_APP_API_URL}/api/posts/${id}`, {
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
-        });
+        const res = await axios.get(
+          `${process.env.REACT_APP_API_URL}/api/posts/${id}`,
+          {
+            headers: token
+              ? { Authorization: `Bearer ${token}` }
+              : {},
+          }
+        );
 
         const data = res.data.post || res.data;
-        console.log(data);
+
         setPost({
           ...data,
           images: data.images || [],
@@ -43,36 +56,28 @@ const PostDetails = () => {
           setLiked(data.likedBy.includes(userId));
         }
       } catch (err) {
-        console.error("Error fetching post:", err);
+        console.error(err);
       } finally {
         setLoading(false);
       }
     };
 
-    const fetchTopPosts = async () => {
-      try {
-        const res = await axios.get(`${process.env.REACT_APP_API_URL}/api/posts/top`);
-        setTopPosts(res.data.posts || res.data);
-      } catch (err) {
-        console.error("Error fetching top posts:", err);
-      }
-    };
-
-    fetchPost();
-    fetchTopPosts();
+    fetchData();
   }, [id, token]);
 
+  /* ================= LIKE ================= */
+
   const handleLike = async () => {
-    if (!token) {
-      setAlert({
-        show: true,
-        message: "Please log in to like posts",
-        type: "error",
-      });
-      return;
-    }
+    if (!token || liking) return;
 
     setLiking(true);
+    setLiked((p) => !p);
+
+    setPost((prev) => ({
+      ...prev,
+      likes: (prev.likes || 0) + (liked ? -1 : 1),
+    }));
+
     try {
       const res = await axios.put(
         `${process.env.REACT_APP_API_URL}/api/posts/${id}/like`,
@@ -80,33 +85,24 @@ const PostDetails = () => {
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      if (res.data && res.data.success) {
-        setLiked(res.data.liked);
-        setPost((prev) => ({
-          ...prev,
-          likes: res.data.likes,
-        }));
-      }
-    } catch (err) {
-      console.error("Error liking post:", err);
+      setLiked(res.data.liked);
+      setPost((prev) => ({ ...prev, likes: res.data.likes }));
+    } catch {
+      setLiked((p) => !p);
+      setPost((prev) => ({
+        ...prev,
+        likes: (prev.likes || 0) + (liked ? 1 : -1),
+      }));
     } finally {
       setLiking(false);
     }
   };
 
+  /* ================= COMMENT (FIXED) ================= */
+
   const handleComment = async (e) => {
     e.preventDefault();
-
-    if (!token) {
-      setAlert({
-        show: true,
-        message: "Please log in to comment",
-        type: "error",
-      });
-      return;
-    }
-
-    if (!comment.trim()) return;
+    if (!token || !comment.trim() || commenting) return;
 
     setCommenting(true);
     try {
@@ -116,15 +112,22 @@ const PostDetails = () => {
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      const updatedPost = res.data.post || res.data;
-      setPost({
-        ...updatedPost,
-        images: updatedPost.images || [],
-        comments: updatedPost.comments || [],
-      });
+      const updatedPost = res.data.post;
+
+      // ✅ FIX: functional update, trust backend
+      setPost((prev) => ({
+        ...prev,
+        comments: updatedPost.comments,
+      }));
+
       setComment("");
     } catch (err) {
-      console.error("Error posting comment:", err);
+      console.error("Comment error:", err);
+      setAlert({
+        show: true,
+        message: "Failed to post comment",
+        type: "error",
+      });
     } finally {
       setCommenting(false);
     }
@@ -136,17 +139,17 @@ const PostDetails = () => {
     speed: 400,
     slidesToShow: 1,
     slidesToScroll: 1,
-    arrows: false,
+    arrows: post?.images?.length > 1,
   };
 
   if (loading) {
     return (
       <>
         <Navbar />
-        <LoadingContainer>
-          <Spinner />
-          <LoadingText>Loading post details...</LoadingText>
-        </LoadingContainer>
+        <Center>
+          <LoadingSpinner />
+          <LoadingText>Loading post...</LoadingText>
+        </Center>
       </>
     );
   }
@@ -155,29 +158,15 @@ const PostDetails = () => {
     return (
       <>
         <Navbar />
-        <ErrorContainer>
-          <ErrorIcon>
-            <svg
-              width="80"
-              height="80"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <circle cx="12" cy="12" r="10" />
-              <line x1="15" y1="9" x2="9" y2="15" />
-              <line x1="9" y1="9" x2="15" y2="15" />
-            </svg>
-          </ErrorIcon>
-          <ErrorTitle>Post Not Found</ErrorTitle>
-          <ErrorText>
-            The post you're looking for doesn't exist or has been removed.
-          </ErrorText>
-          <BackButton onClick={() => navigate("/complaints")}>
-            ← Back to Complaints
-          </BackButton>
-        </ErrorContainer>
+        <Center>
+          <EmptyState>
+            <EmptyIcon>📭</EmptyIcon>
+            <EmptyTitle>Post not found</EmptyTitle>
+            <BackButton onClick={() => navigate("/complaints")}>
+              ← Go Back
+            </BackButton>
+          </EmptyState>
+        </Center>
       </>
     );
   }
@@ -186,167 +175,82 @@ const PostDetails = () => {
     <>
       <Navbar />
       <Container>
-        <MainContent>
-          <PostCard>
-            <PostHeader>
+        <Main>
+          <Card>
+            <Header>
               <BackLink onClick={() => navigate("/complaints")}>
-                <svg
-                  width="20"
-                  height="20"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                >
-                  <path d="M19 12H5M12 19l-7-7 7-7" />
-                </svg>
-                Back
+                ← Back
               </BackLink>
-              <StatusBadge>Active</StatusBadge>
-            </PostHeader>
+              <StatusBadge>{post.status}</StatusBadge>
+            </Header>
 
             <Title>{post.title}</Title>
 
-            {post.images && post.images.length > 0 && (
-              <ImageSection>
+            {post.images.length > 0 && (
+              <ImageBox>
                 <StyledSlider {...sliderSettings}>
-                  {post.images.map((img, index) => (
-                    <ImageWrapper key={index}>
-                      <PostImage
+                  {post.images.map((img, i) => (
+                    <ImageWrapper key={i}>
+                      <Image
                         src={
                           img.startsWith("http")
                             ? img
                             : `http://localhost:5000${img}`
                         }
-                        alt={`post-${index}`}
+                        alt=""
                       />
                     </ImageWrapper>
                   ))}
                 </StyledSlider>
-              </ImageSection>
+              </ImageBox>
             )}
 
             <Description>{post.description}</Description>
 
-            <PostStats>
-              <StatItem>
-                <StatIcon>❤️</StatIcon>
-                <StatText>{post.likes || 0} Likes</StatText>
-              </StatItem>
-              <StatItem>
-                <StatIcon>💬</StatIcon>
-                <StatText>{post.comments?.length || 0} Comments</StatText>
-              </StatItem>
-            </PostStats>
+            <InteractionBar>
+              <StatsGroup>
+                <StatItem>❤️ {post.likes || 0}</StatItem>
+                <StatItem>💬 {post.comments.length}</StatItem>
+              </StatsGroup>
 
-            <ActionBar>
-              <LikeButton onClick={handleLike} disabled={liking} $liked={liked}>
-                {liking ? (
-                  <ButtonSpinner />
-                ) : (
-                  <>
-                    <ButtonIcon $animate={liked}>
-                      {liked ? "💖" : "🤍"}
-                    </ButtonIcon>
-                    <span>{liked ? "Liked" : "Like"}</span>
-                  </>
-                )}
+              <LikeButton onClick={handleLike} disabled={liking}>
+                {liked ? "❤️ Liked" : "🤍 Like"}
               </LikeButton>
-            </ActionBar>
-          </PostCard>
+            </InteractionBar>
+          </Card>
 
-          <CommentsCard>
-            <SectionHeader>
-              <SectionIcon>💬</SectionIcon>
-              <SectionTitle>
-                Comments ({post.comments?.length || 0})
-              </SectionTitle>
-            </SectionHeader>
+          <Card>
+            <CommentsTitle>Comments ({post.comments.length})</CommentsTitle>
 
             <CommentForm onSubmit={handleComment}>
-              <CommentInputWrapper>
-                <CommentInput
-                  type="text"
-                  placeholder="Write a comment..."
-                  value={comment}
-                  onChange={(e) => setComment(e.target.value)}
-                  disabled={commenting}
-                />
-                <SubmitButton
-                  type="submit"
-                  disabled={commenting || !comment.trim()}
-                >
-                  {commenting ? <ButtonSpinner small /> : "Post"}
-                </SubmitButton>
-              </CommentInputWrapper>
+              <CommentInput
+                value={comment}
+                onChange={(e) => setComment(e.target.value)}
+                placeholder="Write a comment..."
+              />
+              <CommentSubmit disabled={!comment.trim() || commenting}>
+                Post
+              </CommentSubmit>
             </CommentForm>
 
-            <CommentList>
-              {post.comments && post.comments.length > 0 ? (
-                post.comments.map((c, i) => (
-                  <CommentItem key={i}>
-                    <CommentAvatar>
-                      {c.user?.charAt(0).toUpperCase() || "U"}
-                    </CommentAvatar>
+            <CommentsList>
+              {post.comments.map((c, i) => {
+                const name = c.user?.name || "Anonymous";
+                return (
+                  <CommentItem key={c._id || i}>
+                    <CommentAvatar>{name[0]}</CommentAvatar>
                     <CommentContent>
-                      <CommentAuthor>{c.user || "Anonymous"}</CommentAuthor>
+                      <CommentAuthor>{name}</CommentAuthor>
                       <CommentText>{c.text}</CommentText>
                     </CommentContent>
                   </CommentItem>
-                ))
-              ) : (
-                <EmptyComments>
-                  <EmptyIcon>💬</EmptyIcon>
-                  <EmptyText>
-                    No comments yet. Be the first to comment!
-                  </EmptyText>
-                </EmptyComments>
-              )}
-            </CommentList>
-          </CommentsCard>
-        </MainContent>
-
-        <Sidebar>
-          <SidebarCard>
-            <SidebarHeader>
-              <SidebarTitle>Trending Posts</SidebarTitle>
-            </SidebarHeader>
-
-            {topPosts && topPosts.length > 0 ? (
-              <TopPostList>
-                {topPosts.slice(0, 5).map((p, index) => (
-                  <TopPostItem
-                    key={p._id}
-                    onClick={() => navigate(`/post/${p._id}`)}
-                  >
-                    <TopPostContent>
-                      <TopPostTitle>{p.title}</TopPostTitle>
-                      <TopPostLikes>
-                        <LikeIcon>❤️</LikeIcon>
-                        <span>{p.likes || 0}</span>
-                      </TopPostLikes>
-                    </TopPostContent>
-                  </TopPostItem>
-                ))}
-              </TopPostList>
-            ) : (
-              <EmptyTopPosts>
-                <EmptyTopIcon>📊</EmptyTopIcon>
-                <EmptyTopText>No trending posts yet</EmptyTopText>
-              </EmptyTopPosts>
-            )}
-          </SidebarCard>
-
-          <InfoCard>
-            <InfoTitle>Need Help?</InfoTitle>
-            <InfoText>
-              Report inappropriate content or reach out to community moderators
-              for assistance.
-            </InfoText>
-            <ReportButton>Report Issue</ReportButton>
-          </InfoCard>
-        </Sidebar>
+                );
+              })}
+            </CommentsList>
+          </Card>
+        </Main>
       </Container>
+
       {alert.show && (
         <Alert
           message={alert.message}
@@ -360,315 +264,324 @@ const PostDetails = () => {
 
 export default PostDetails;
 
-const Container = styled.div`
-  max-width: 1400px;
-  margin: 0 auto;
-  padding: 40px 80px;
-  display: grid;
-  grid-template-columns: 1fr 380px;
-  gap: 40px;
-  overflow-x: hidden;
+/* styles remain unchanged */
 
-  @media (max-width: 968px) {
-    grid-template-columns: 1fr;
-    padding: 20px;
+/* ================= STYLES ================= */
+
+const Container = styled.div`
+  max-width: 900px;
+  margin: auto;
+  padding: 40px 20px;
+
+  @media (max-width: 768px) {
+    padding: 24px 16px;
   }
 `;
 
-const MainContent = styled.div`
+const Main = styled.div`
   display: flex;
   flex-direction: column;
   gap: 24px;
   min-width: 0;
-  overflow-x: hidden;
+
+  @media (max-width: 768px) {
+    gap: 20px;
+  }
 `;
 
-const PostCard = styled.div`
+const Card = styled.div`
   background: white;
   border-radius: 20px;
   padding: 32px;
-  border: 2px solid #f0f0f0;
+  border: 1px solid #eef0f6;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
-  overflow: hidden;
-  width: 100%;
-  max-width: 100%;
-  box-sizing: border-box;
+
+  @media (max-width: 768px) {
+    padding: 24px;
+    border-radius: 16px;
+  }
+
+  @media (max-width: 480px) {
+    padding: 20px;
+  }
 `;
 
-const PostHeader = styled.div`
+const Header = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 24px;
+  gap: 16px;
+
+  @media (max-width: 480px) {
+    margin-bottom: 20px;
+  }
 `;
 
 const BackLink = styled.button`
   display: flex;
   align-items: center;
   gap: 8px;
-  background: none;
   border: none;
+  background: none;
   color: #667eea;
-  font-size: 15px;
-  font-weight: 600;
   cursor: pointer;
+  font-weight: 600;
+  font-size: 15px;
   transition: all 0.2s ease;
+  padding: 8px 12px;
+  border-radius: 8px;
 
   &:hover {
-    gap: 12px;
-    color: #764ba2;
+    background: #f5f6ff;
+    transform: translateX(-2px);
+  }
+
+  @media (max-width: 480px) {
+    font-size: 14px;
+    padding: 6px 8px;
   }
 `;
 
+const BackIcon = styled.span`
+  font-size: 18px;
+`;
+
 const StatusBadge = styled.span`
-  padding: 6px 16px;
-  background: #dcfce7;
-  color: #16a34a;
-  border-radius: 20px;
-  font-size: 13px;
+  background: ${({ $status }) =>
+    $status === "resolved"
+      ? "linear-gradient(135deg, #22c55e, #16a34a)"
+      : "linear-gradient(135deg, #667eea, #764ba2)"};
+  color: white;
+  padding: 8px 16px;
+  border-radius: 999px;
   font-weight: 700;
+  font-size: 13px;
+  text-transform: capitalize;
+  white-space: nowrap;
+
+  @media (max-width: 480px) {
+    padding: 6px 12px;
+    font-size: 12px;
+  }
 `;
 
 const Title = styled.h1`
+  margin: 0 0 24px 0;
   font-size: 32px;
   font-weight: 800;
   color: #1a1a1a;
-  margin: 0 0 24px 0;
   line-height: 1.3;
 
   @media (max-width: 768px) {
     font-size: 26px;
+    margin-bottom: 20px;
+  }
+
+  @media (max-width: 480px) {
+    font-size: 22px;
   }
 `;
 
-const ImageSection = styled.div`
-  margin: 0 -32px 32px -32px;
-  width: calc(100% + 64px);
-  max-width: calc(100% + 64px);
+const ImageBox = styled.div`
+  height: 400px;
+  border-radius: 16px;
   overflow: hidden;
+  background: #000;
+  margin-bottom: 24px;
+
+  @media (max-width: 768px) {
+    height: 300px;
+    border-radius: 12px;
+  }
+
+  @media (max-width: 480px) {
+    height: 250px;
+  }
 `;
 
 const StyledSlider = styled(Slider)`
-  .slick-list {
-    margin: 0;
-    padding: 0;
-    overflow: hidden;
-  }
+  height: 100%;
 
-  .slick-track {
-    display: flex !important;
-    align-items: center;
-  }
-
-  .slick-slide {
-    height: auto;
-
-    > div {
-      height: 100%;
-    }
+  .slick-list,
+  .slick-track,
+  .slick-slide > div {
+    height: 100%;
   }
 
   .slick-dots {
     bottom: 20px;
-    z-index: 10;
+  }
 
-    li {
-      margin: 0 4px;
-    }
+  .slick-dots li button:before {
+    color: white;
+    font-size: 10px;
+  }
 
-    li button {
-      width: 10px;
-      height: 10px;
-      padding: 0;
-    }
+  .slick-prev,
+  .slick-next {
+    z-index: 1;
+    width: 40px;
+    height: 40px;
+  }
 
-    li button:before {
-      font-size: 10px;
-      color: white;
-      opacity: 0.5;
-    }
+  .slick-prev {
+    left: 20px;
+  }
 
-    li.slick-active button:before {
-      color: #667eea;
-      opacity: 1;
-    }
+  .slick-next {
+    right: 20px;
+  }
+
+  .slick-prev:before,
+  .slick-next:before {
+    font-size: 40px;
   }
 `;
 
 const ImageWrapper = styled.div`
-  position: relative;
-  width: 100%;
-  height: 500px;
+  height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #000;
-
-  @media (max-width: 768px) {
-    height: 300px;
-  }
 `;
 
-const PostImage = styled.img`
+const Image = styled.img`
   width: 100%;
   height: 100%;
   object-fit: contain;
-  display: block;
 `;
 
 const Description = styled.p`
-  font-size: 17px;
-  color: #334155;
-  line-height: 1.8;
-  margin: 0 0 32px 0;
+  background: #f9fafb;
+  padding: 24px;
+  border-radius: 14px;
+  line-height: 1.7;
+  color: #374151;
+  font-size: 16px;
+  margin: 0 0 24px 0;
   white-space: pre-wrap;
-  background: #f8f9fa;
-  padding: 24px;
-  border-radius: 16px;
-  border-left: 4px solid #667eea;
-`;
 
-const PostStats = styled.div`
-  display: flex;
-  gap: 32px;
-  align-items: center;
-  flex-wrap: wrap;
-  padding: 24px;
-  background: linear-gradient(135deg, #f8f9fa 0%, #fafbfc 100%);
-  border-radius: 16px;
-  margin-bottom: 24px;
+  @media (max-width: 768px) {
+    padding: 20px;
+    font-size: 15px;
+  }
 
   @media (max-width: 480px) {
-    gap: 20px;
+    padding: 16px;
+  }
+`;
+
+const InteractionBar = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 24px;
+  border-top: 1px solid #eef0f6;
+  gap: 16px;
+
+  @media (max-width: 480px) {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
+  }
+`;
+
+const StatsGroup = styled.div`
+  display: flex;
+  gap: 24px;
+
+  @media (max-width: 480px) {
+    justify-content: center;
   }
 `;
 
 const StatItem = styled.div`
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 8px 16px;
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-  transition: all 0.2s ease;
-  justify-content: center;
+  gap: 8px;
 `;
 
 const StatIcon = styled.span`
-  font-size: 22px;
+  font-size: 18px;
 `;
 
 const StatText = styled.span`
+  font-weight: 600;
+  color: #374151;
   font-size: 15px;
-  color: #1a1a1a;
-  font-weight: 700;
-`;
 
-const ActionBar = styled.div`
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: center;
+  @media (max-width: 480px) {
+    font-size: 14px;
+  }
 `;
 
 const LikeButton = styled.button`
-  padding: 10px 22px;
-  border-radius: 30px;
-  font-size: 15px;
-  font-weight: 600;
-  cursor: pointer;
-  border: 2px solid #667eea;
-  background: ${(props) => (props.$liked ? "#667eea" : "white")};
-  color: ${(props) => (props.$liked ? "white" : "#667eea")};
-  transition: all 0.2s ease;
-
-  &:hover {
-    background: ${(props) => (props.$liked ? "#556cd6" : "#eef2ff")};
-  }
-
-  &:active {
-    transform: scale(0.98);
-  }
-`;
-
-const ButtonIcon = styled.span`
-  font-size: 24px;
-  position: relative;
-  z-index: 1;
-  animation: ${(props) =>
-    props.$animate ? "heartbeat 0.6s ease-in-out" : "none"};
-
-  @keyframes heartbeat {
-    0%,
-    100% {
-      transform: scale(1);
-    }
-    25% {
-      transform: scale(1.3);
-    }
-    50% {
-      transform: scale(1.1);
-    }
-    75% {
-      transform: scale(1.2);
-    }
-  }
-`;
-
-const ButtonSpinner = styled.div`
-  width: ${(props) => (props.small ? "16px" : "20px")};
-  height: ${(props) => (props.small ? "16px" : "20px")};
-  border: 3px solid rgba(255, 255, 255, 0.3);
-  border-top-color: white;
-  border-radius: 50%;
-  animation: spin 0.6s linear infinite;
-
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
-  }
-`;
-
-const CommentsCard = styled.div`
-  background: white;
-  border-radius: 20px;
-  padding: 32px;
-  border: 2px solid #f0f0f0;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
-  width: 100%;
-  max-width: 100%;
-  box-sizing: border-box;
-  overflow: hidden;
-`;
-
-const SectionHeader = styled.div`
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 24px;
+  justify-content: center;
+  gap: 10px;
+  padding: 12px 32px;
+  border-radius: 999px;
+  border: 2px solid ${({ $liked }) => ($liked ? "#667eea" : "#e2e8f0")};
+  background: ${({ $liked }) =>
+    $liked ? "linear-gradient(135deg, #667eea 0%, #764ba2 100%)" : "white"};
+  color: ${({ $liked }) => ($liked ? "white" : "#374151")};
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 15px;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+
+  &:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 16px rgba(102, 126, 234, 0.25);
+    border-color: #667eea;
+  }
+
+  &:active:not(:disabled) {
+    transform: translateY(0);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  @media (max-width: 480px) {
+    width: 100%;
+    padding: 12px 24px;
+  }
 `;
 
-const SectionIcon = styled.span`
-  font-size: 28px;
+const LikeIcon = styled.span`
+  font-size: 20px;
+  transition: transform 0.2s ease;
+
+  ${LikeButton}:hover & {
+    transform: scale(1.2);
+  }
 `;
 
-const SectionTitle = styled.h2`
-  font-size: 24px;
-  font-weight: 800;
-  color: #1a1a1a;
+const CommentsHeader = styled.div`
+  margin-bottom: 20px;
+`;
+
+const CommentsTitle = styled.h3`
   margin: 0;
+  font-size: 22px;
+  font-weight: 700;
+  color: #1a1a1a;
+
+  @media (max-width: 768px) {
+    font-size: 20px;
+  }
 `;
 
 const CommentForm = styled.form`
-  margin-bottom: 32px;
-`;
-
-const CommentInputWrapper = styled.div`
   display: flex;
   gap: 12px;
+  margin-bottom: 28px;
 
   @media (max-width: 480px) {
     flex-direction: column;
@@ -677,12 +590,12 @@ const CommentInputWrapper = styled.div`
 
 const CommentInput = styled.input`
   flex: 1;
-  padding: 14px 18px;
-  border: 2px solid #e2e8f0;
+  padding: 14px 16px;
   border-radius: 12px;
+  border: 2px solid #e2e8f0;
   font-size: 15px;
+  font-family: inherit;
   transition: all 0.2s ease;
-  background: ${(props) => (props.disabled ? "#f8f9fa" : "white")};
 
   &:focus {
     outline: none;
@@ -695,57 +608,86 @@ const CommentInput = styled.input`
   }
 
   &:disabled {
-    opacity: 0.6;
+    background: #f9fafb;
     cursor: not-allowed;
+  }
+
+  @media (max-width: 768px) {
+    padding: 12px 14px;
+    font-size: 14px;
   }
 `;
 
-const SubmitButton = styled.button`
-  padding: 14px 32px;
+const CommentSubmit = styled.button`
+  padding: 14px 28px;
+  border-radius: 12px;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
   border: none;
-  border-radius: 12px;
-  font-size: 15px;
   font-weight: 700;
-  cursor: ${(props) => (props.disabled ? "not-allowed" : "pointer")};
-  transition: all 0.3s ease;
-  min-width: 100px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  opacity: ${(props) => (props.disabled ? 0.6 : 1)};
+  font-size: 15px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
 
-  &:hover {
-    transform: ${(props) => (props.disabled ? "none" : "translateY(-2px)")};
-    box-shadow: ${(props) =>
-      props.disabled ? "none" : "0 6px 20px rgba(102, 126, 234, 0.4)"};
+  &:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 16px rgba(102, 126, 234, 0.3);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
   }
 
   @media (max-width: 480px) {
     width: 100%;
+    padding: 12px 24px;
   }
 `;
 
-const CommentList = styled.div`
+const CommentsList = styled.div`
   display: flex;
   flex-direction: column;
   gap: 16px;
 `;
 
+const EmptyComments = styled.div`
+  text-align: center;
+  padding: 40px 20px;
+`;
+
+const EmptyCommentsIcon = styled.div`
+  font-size: 48px;
+  margin-bottom: 12px;
+`;
+
+const EmptyCommentsText = styled.p`
+  color: #6b7280;
+  font-size: 15px;
+`;
+
 const CommentItem = styled.div`
   display: flex;
-  gap: 16px;
-  padding: 20px;
-  background: white;
-  border-radius: 16px;
-  border: 2px solid #f0f0f0;
-  transition: all 0.3s ease;
+  gap: 14px;
+  padding: 16px;
+  background: #f9fafb;
+  border-radius: 12px;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: #f3f4f6;
+  }
+
+  @media (max-width: 480px) {
+    gap: 12px;
+    padding: 14px;
+  }
 `;
 
 const CommentAvatar = styled.div`
-  width: 44px;
-  height: 44px;
+  width: 42px;
+  height: 42px;
   border-radius: 50%;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
@@ -753,195 +695,57 @@ const CommentAvatar = styled.div`
   align-items: center;
   justify-content: center;
   font-weight: 700;
-  font-size: 18px;
+  font-size: 16px;
   flex-shrink: 0;
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+
+  @media (max-width: 480px) {
+    width: 36px;
+    height: 36px;
+    font-size: 14px;
+  }
 `;
 
 const CommentContent = styled.div`
   flex: 1;
+  min-width: 0;
 `;
 
 const CommentAuthor = styled.div`
-  font-size: 14px;
   font-weight: 700;
   color: #1a1a1a;
-  margin-bottom: 6px;
+  margin-bottom: 4px;
+  font-size: 15px;
+
+  @media (max-width: 480px) {
+    font-size: 14px;
+  }
 `;
 
 const CommentText = styled.p`
-  font-size: 15px;
-  color: #64748b;
   margin: 0;
+  color: #374151;
   line-height: 1.6;
-`;
-
-const EmptyComments = styled.div`
-  text-align: center;
-  padding: 60px 20px;
-`;
-
-const EmptyIcon = styled.div`
-  font-size: 48px;
-  margin-bottom: 16px;
-  opacity: 0.5;
-`;
-
-const EmptyText = styled.p`
   font-size: 15px;
-  color: #94a3b8;
-  margin: 0;
-`;
+  word-wrap: break-word;
 
-const Sidebar = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-  min-width: 0;
-
-  @media (max-width: 968px) {
-    order: -1;
+  @media (max-width: 480px) {
+    font-size: 14px;
   }
 `;
 
-const SidebarCard = styled.div`
-  background: white;
-  border-radius: 20px;
-  padding: 24px;
-  border: 2px solid #f0f0f0;
-`;
-
-const SidebarHeader = styled.div`
+const Center = styled.div`
+  min-height: calc(100vh - 80px);
   display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 20px;
-`;
-
-const SidebarTitle = styled.h3`
-  font-size: 18px;
-  font-weight: 800;
-  color: #1a1a1a;
-  margin: 0;
-`;
-
-const TopPostList = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-`;
-
-const TopPostItem = styled.div`
-  display: flex;
-  gap: 12px;
-  padding: 12px;
-  background: #fafbfc;
-  border-radius: 12px;
-  border: 1px solid #f0f0f0;
-  cursor: pointer;
-  transition: all 0.2s ease;
-
-  &:hover {
-    background: white;
-    transform: translateX(1px);
-  }
-`;
-
-const TopPostContent = styled.div`
-  flex: 1;
-  min-width: 0;
-`;
-
-const TopPostTitle = styled.h4`
-  font-size: 14px;
-  font-weight: 700;
-  color: #1a1a1a;
-  margin: 0 0 6px 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-`;
-
-const TopPostLikes = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 13px;
-  color: #64748b;
-  font-weight: 600;
-`;
-
-const LikeIcon = styled.span`
-  font-size: 14px;
-`;
-
-const EmptyTopPosts = styled.div`
-  text-align: center;
-  padding: 32px 16px;
-`;
-
-const EmptyTopIcon = styled.div`
-  font-size: 40px;
-  margin-bottom: 8px;
-`;
-
-const EmptyTopText = styled.p`
-  font-size: 14px;
-  color: #94a3b8;
-  margin: 0;
-`;
-
-const InfoCard = styled.div`
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border-radius: 20px;
-  padding: 24px;
-  color: white;
-`;
-
-const InfoTitle = styled.h4`
-  font-size: 16px;
-  font-weight: 700;
-  margin: 0 0 8px 0;
-`;
-
-const InfoText = styled.p`
-  font-size: 14px;
-  line-height: 1.6;
-  margin: 0 0 16px 0;
-  opacity: 0.95;
-`;
-
-const ReportButton = styled.button`
-  width: 100%;
-  padding: 10px;
-  background: rgba(255, 255, 255, 0.2);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  color: white;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-
-  &:hover {
-    background: rgba(255, 255, 255, 0.3);
-  }
-`;
-
-const LoadingContainer = styled.div`
-  display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-height: calc(100vh - 70px);
-  gap: 20px;
+  flex-direction: column;
+  padding: 20px;
 `;
 
-const Spinner = styled.div`
-  width: 48px;
-  height: 48px;
-  border: 4px solid #f0f0f0;
+const LoadingSpinner = styled.div`
+  width: 50px;
+  height: 50px;
+  border: 4px solid #eef0f6;
   border-top-color: #667eea;
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
@@ -954,48 +758,41 @@ const Spinner = styled.div`
 `;
 
 const LoadingText = styled.p`
-  font-size: 16px;
-  color: #64748b;
+  margin-top: 20px;
+  color: #667eea;
   font-weight: 600;
-`;
-
-const ErrorContainer = styled.div`
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-height: calc(100vh - 70px);
-  padding: 40px 20px;
-  text-align: center;
-`;
-
-const ErrorIcon = styled.div`
-  color: #cbd5e1;
-  margin-bottom: 24px;
-`;
-
-const ErrorTitle = styled.h2`
-  font-size: 28px;
-  font-weight: 800;
-  color: #1a1a1a;
-  margin: 0 0 12px 0;
-`;
-
-const ErrorText = styled.p`
   font-size: 16px;
-  color: #64748b;
-  margin: 0 0 32px 0;
+`;
+
+const EmptyState = styled.div`
+  text-align: center;
   max-width: 400px;
 `;
 
+const EmptyIcon = styled.div`
+  font-size: 72px;
+  margin-bottom: 20px;
+`;
+
+const EmptyTitle = styled.h2`
+  font-size: 24px;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin: 0 0 24px 0;
+`;
+
 const BackButton = styled.button`
-  padding: 14px 32px;
+  padding: 12px 28px;
+  border-radius: 12px;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
   border: none;
-  border-radius: 12px;
-  font-size: 16px;
   font-weight: 700;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 16px rgba(102, 126, 234, 0.3);
+  }
 `;

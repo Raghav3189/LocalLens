@@ -10,6 +10,7 @@ import Profile from "./pages/Profile";
 import Concerns from "./pages/Concerns";
 import CreatePost from "./pages/CreatePost";
 import PostDetails from "./pages/PostDetails";
+import AddProduct from "./pages/AddProduct";
 
 function App() {
   return (
@@ -24,6 +25,7 @@ function App() {
       <Route path="/concerns" element={<Concerns />} />
       <Route path="/create" element={<CreatePost />} />
       <Route path="/post/:id" element={<PostDetails />} />
+      <Route path="/addproduct" element={<AddProduct />} />
     </Routes>
   );
 }

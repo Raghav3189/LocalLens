@@ -3,9 +3,11 @@ import styled from "styled-components";
 import { useNavigate, useLocation } from "react-router-dom"; // Import useLocation
 import { AuthContext } from "../context/AuthContext";
 import BorderButton from "./BorderButton";
+import { useRadius } from "../context/RadiusContext";
 
 const Navbar = () => {
   const navigate = useNavigate();
+  const { radius, setRadius } = useRadius();
   const location = useLocation(); // Get the current location (active page)
   const { user, logout } = useContext(AuthContext);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -30,7 +32,13 @@ const Navbar = () => {
               />
               <path d="M12 6 L16 12 L12 18 L8 12 Z" fill="url(#gradient)" />
               <defs>
-                <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                <linearGradient
+                  id="gradient"
+                  x1="0%"
+                  y1="0%"
+                  x2="100%"
+                  y2="100%"
+                >
                   <stop offset="0%" stopColor="#667eea" />
                   <stop offset="100%" stopColor="#764ba2" />
                 </linearGradient>
@@ -44,32 +52,38 @@ const Navbar = () => {
         <NavList className={mobileMenuOpen ? "open" : ""}>
           <NavItem
             className={getNavItemClass("/")}
-            onClick={() => { navigate("/"); setMobileMenuOpen(false); }}
+            onClick={() => {
+              navigate("/");
+              setMobileMenuOpen(false);
+            }}
           >
             Home
           </NavItem>
           <NavItem
             className={getNavItemClass("/complaints")}
-            onClick={() => { navigate("/complaints"); setMobileMenuOpen(false); }}
+            onClick={() => {
+              navigate("/complaints");
+              setMobileMenuOpen(false);
+            }}
           >
-            Complaints
+            Community
           </NavItem>
           <NavItem
             className={getNavItemClass("/marketplace")}
-            onClick={() => { navigate("/marketplace"); setMobileMenuOpen(false); }}
+            onClick={() => {
+              navigate("/marketplace");
+              setMobileMenuOpen(false);
+            }}
           >
             Marketplace
-          </NavItem>
-          <NavItem
-            className={getNavItemClass("/concerns")}
-            onClick={() => { navigate("/concerns"); setMobileMenuOpen(false); }}
-          >
-            Concerns
           </NavItem>
           {user && (
             <NavItem
               className={getNavItemClass("/profile")}
-              onClick={() => { navigate("/profile"); setMobileMenuOpen(false); }}
+              onClick={() => {
+                navigate("/profile");
+                setMobileMenuOpen(false);
+              }}
             >
               Profile
             </NavItem>
@@ -97,12 +111,36 @@ const Navbar = () => {
               </BorderButton>
             )}
           </MobileButtonContainer>
+          <MobileRadiusContainer>
+            <MobileRadiusLabel>Radius</MobileRadiusLabel>
+            <RadiusSelect
+              value={radius}
+              onChange={(e) => setRadius(Number(e.target.value))}
+            >
+              <option value={1}>1 km</option>
+              <option value={5}>5 km</option>
+              <option value={10}>10 km</option>
+              <option value={25}>25 km</option>
+            </RadiusSelect>
+          </MobileRadiusContainer>
         </NavList>
 
         {/* Desktop Buttons */}
         <ButtonGroup>
+          <RadiusSelect
+            value={radius}
+            onChange={(e) => setRadius(Number(e.target.value))}
+          >
+            <option value={1}>1 km</option>
+            <option value={5}>5 km</option>
+            <option value={10}>10 km</option>
+            <option value={25}>25 km</option>
+          </RadiusSelect>
+
           {!user ? (
-            <BorderButton onClick={() => navigate("/login")}>Sign In</BorderButton>
+            <BorderButton onClick={() => navigate("/login")}>
+              Sign In
+            </BorderButton>
           ) : (
             <BorderButton onClick={logout}>Logout</BorderButton>
           )}
@@ -297,3 +335,54 @@ const MobileMenuButton = styled.button`
   }
 `;
 
+const RadiusSelect = styled.select`
+  padding: 11px 14px;
+  border-radius: 10px;
+  border: 2px solid rgba(102, 126, 234, 0.4);
+  background: linear-gradient(
+    135deg,
+    rgba(102, 126, 234, 0.08),
+    rgba(118, 75, 162, 0.08)
+  );
+  color: #333;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  appearance: none;
+  background-image: url("data:image/svg+xml;utf8,<svg fill='%23667eea' height='24' viewBox='0 0 24 24' width='24' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 18px;
+  padding-right: 38px;
+
+  &:hover {
+    border-color: #667eea;
+  }
+
+  &:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.25);
+    background: white;
+  }
+
+  option {
+    font-weight: 600;
+  }
+`;
+const MobileRadiusContainer = styled.div`
+  display: none;
+
+  @media (max-width: 968px) {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 20px;
+  }
+`;
+
+const MobileRadiusLabel = styled.span`
+  font-size: 13px;
+  font-weight: 600;
+  color: #667eea;
+`;

@@ -2,33 +2,47 @@ const express = require("express");
 const router = express.Router();
 const upload = require("../middleware/upload");
 const protect = require("../middleware/authMiddleware");
+const { updatePost } = require("../controllers/postController");
 
-const {
-  createPost,
-  getNearbyPosts,
-  getAllPosts,
-  getPostById,
-  likePost,
-  commentOnPost,
-  getTopPosts,
-} = require("../controllers/postController");
+router.put("/:id", protect, updatePost);
 
-// frontend sends text+images
-//Multer : a middleware that helps Express handle file uploads.
+
+const postController = require("../controllers/postController");
+
+// ---------------- CREATE ----------------
+// frontend sends text+images 
+//Multer : a middleware that helps Express handle file uploads. 
 //upload : the Multer instance created earlier
 //.array("images", 5) : tells Multer to expect multiple files under the field name "images", and allow up to 5 files max
-router.post("/create", upload.array("images", 5), createPost);
+router.post(
+  "/create",
+  protect,                     // 🔴 REQUIRED
+  upload.array("images", 5),
+  postController.createPost
+);
 
-router.get("/top", getTopPosts);
+// ---------------- READ (ORDER MATTERS) ----------------
+router.get("/my", protect, postController.getMyPosts); // 🔴 BEFORE :id
 
-router.get("/nearby", getNearbyPosts);
+router.get("/top", postController.getTopPosts);
 
-router.get("/", getAllPosts);
+router.get("/nearby", postController.getNearbyPosts);
 
-router.get("/:id", getPostById);
+router.get("/", postController.getAllPosts);
 
-router.put("/:id/like",protect, likePost);
+router.get("/:id", postController.getPostById);
 
-router.post("/:id/comment",protect, commentOnPost);
+// ---------------- INTERACTIONS ----------------
+router.put("/:id/like", protect, postController.likePost);
+
+router.post("/:id/comment", protect, postController.commentOnPost);
+
+// ---------------- DELETE ----------------
+router.delete("/:id", protect, postController.deletePost);
+
+
+router.put("/:id", protect, updatePost);
+
+router.patch("/:id/status", protect, postController.updatePostStatus);
 
 module.exports = router;

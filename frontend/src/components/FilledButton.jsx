@@ -10,6 +10,8 @@ const spin = keyframes`
 // Styled filled button
 const Button = styled.button`
   padding: 10px 24px;
+  align-self: center;
+  white-space: nowrap;
   border-radius: 8px;
   cursor: pointer;
   font-size: 15px;

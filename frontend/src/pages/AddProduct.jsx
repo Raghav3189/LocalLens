@@ -3,13 +3,17 @@ import styled from "styled-components";
 import { MapContainer, TileLayer, Marker, useMapEvents } from "react-leaflet";
 import Navbar from "../components/Navbar";
 import FilledButton from "../components/FilledButton";
-import api from "../api/axios"; // 🔴 IMPORTANT (JWT included)
+import api from "../api/axios"; // 🔴 IMPORTANT
 
-const CreatePost = () => {
+const AddProduct = () => {
   const [formData, setFormData] = useState({
-    title: "",
+    name: "",
     description: "",
-    postType: "normal",
+    price: "",
+    priceUnit: "fixed",
+    type: "sell",
+    contactEmail: "",
+    contactPhone: "",
     images: null,
   });
 
@@ -46,7 +50,7 @@ const CreatePost = () => {
           });
         },
         () => {
-          setLocation({ latitude: 20.5937, longitude: 78.9629 });
+          setLocation({ latitude: 18.5204, longitude: 73.8567 }); // Pune default
         }
       );
     }
@@ -70,6 +74,42 @@ const CreatePost = () => {
     });
   };
 
+  const uploadToCloudinary = async (file) => {
+    const sigRes = await fetch(
+      "http://localhost:5000/api/cloudinary/signature"
+    );
+
+    if (!sigRes.ok) {
+      throw new Error("Failed to get Cloudinary signature");
+    }
+
+    const { signature, timestamp, cloudName, apiKey } = await sigRes.json();
+
+    const data = new FormData();
+    data.append("file", file);
+    data.append("api_key", apiKey);
+    data.append("timestamp", timestamp);
+    data.append("signature", signature);
+    data.append("folder", "local_lens_products");
+
+    const uploadRes = await fetch(
+      `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
+      {
+        method: "POST",
+        body: data,
+      }
+    );
+
+    if (!uploadRes.ok) {
+      const err = await uploadRes.json();
+      console.error("Cloudinary error:", err);
+      throw new Error("Cloudinary upload failed");
+    }
+
+    const result = await uploadRes.json();
+    return result.secure_url;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -81,29 +121,49 @@ const CreatePost = () => {
     setSubmitting(true);
 
     try {
-      const data = new FormData();
-      data.append("title", formData.title);
-      data.append("description", formData.description);
-      data.append("postType", formData.postType);
-      data.append("latitude", location.latitude);
-      data.append("longitude", location.longitude);
-
+      // Upload images first
+      let uploadedImageURLs = [];
       if (formData.images) {
-        Array.from(formData.images).forEach((img) =>
-          data.append("images", img)
+        uploadedImageURLs = await Promise.all(
+          Array.from(formData.images).map((img) =>
+            uploadToCloudinary(img)
+          )
         );
       }
 
-      // 🔴 FIXED: use axios instance (JWT auto attached)
-      await api.post("/posts/create", data);
+      // 🔴 FIXED: use axios instance (JWT included)
+      await api.post("/products", {
+        name: formData.name,
+        description: formData.description,
+        price: formData.price,
+        priceUnit: formData.priceUnit,
+        type: formData.type,
+        contactEmail: formData.contactEmail,
+        contactPhone: formData.contactPhone,
+        latitude: location.latitude,
+        longitude: location.longitude,
+        images: uploadedImageURLs,
+      });
 
-      alert("Post created successfully!");
-      setFormData({ title: "", description: "", images: null });
+      alert("Product added successfully! 🎉");
+
+      // Reset form
+      setFormData({
+        name: "",
+        description: "",
+        price: "",
+        priceUnit: "fixed",
+        type: "sell",
+        contactEmail: "",
+        contactPhone: "",
+        images: null,
+      });
+
       setLocation(null);
       setShowMap(false);
     } catch (error) {
-      console.error("Error creating post:", error);
-      alert("Failed to create post");
+      console.error("Error creating product:", error);
+      alert("Failed to create product");
     } finally {
       setSubmitting(false);
     }
@@ -116,25 +176,26 @@ const CreatePost = () => {
       <Navbar />
       <Container>
         <Header>
-          <HeaderIcon>✍️</HeaderIcon>
+          <HeaderIcon>🏪</HeaderIcon>
           <HeaderText>
-            <Title>Create New Post</Title>
-            <Subtitle>
-              Share a complaint or concern with your community
-            </Subtitle>
+            <Title>Add New Product</Title>
+            <Subtitle>List your product for sale or rent in your local area</Subtitle>
           </HeaderText>
         </Header>
 
         <FormCard onSubmit={handleSubmit}>
+          {/* Product Details Section */}
+          <SectionDivider>
+            <SectionTitle>Product Details</SectionTitle>
+          </SectionDivider>
+
           <FormSection>
-            <Label>Title *</Label>
+            <Label>Product Name *</Label>
             <Input
               type="text"
-              placeholder="Enter a descriptive title"
-              value={formData.title}
-              onChange={(e) =>
-                setFormData({ ...formData, title: e.target.value })
-              }
+              placeholder="e.g., Canon EOS Camera"
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               required
               disabled={isDisabled}
             />
@@ -143,50 +204,62 @@ const CreatePost = () => {
           <FormSection>
             <Label>Description *</Label>
             <Textarea
-              placeholder="Describe the issue in detail..."
+              placeholder="Describe your product in detail..."
               value={formData.description}
-              onChange={(e) =>
-                setFormData({ ...formData, description: e.target.value })
-              }
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               required
               disabled={isDisabled}
             />
           </FormSection>
 
+          <RowGroup>
+            <FormSection>
+              <Label>Price *</Label>
+              <Input
+                type="number"
+                placeholder="5000"
+                value={formData.price}
+                onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                min="0"
+                step="0.01"
+                required
+                disabled={isDisabled}
+              />
+            </FormSection>
+
+            <FormSection>
+              <Label>Price Type *</Label>
+              <Select
+                value={formData.priceUnit}
+                onChange={(e) => setFormData({ ...formData, priceUnit: e.target.value })}
+                required
+                disabled={isDisabled}
+              >
+                <option value="fixed">Fixed Price</option>
+                <option value="per_day">Per Day</option>
+              </Select>
+            </FormSection>
+          </RowGroup>
+
           <FormSection>
-            <Label>Post Type *</Label>
-            <PostTypeGroup>
-              {["normal", "concern", "complaint"].map((type) => (
-                <PostTypeButton
-                  key={type}
-                  type="button"
-                  disabled={isDisabled}
-                  $active={formData.postType === type}
-                  onClick={() =>
-                    setFormData((prev) => ({ ...prev, postType: type }))
-                  }
-                >
-                  {type === "normal" && "📝 Normal"}
-                  {type === "concern" && "⚠️ Concern"}
-                  {type === "complaint" && "🚨 Complaint"}
-                </PostTypeButton>
-              ))}
-            </PostTypeGroup>
+            <Label>Listing Type *</Label>
+            <Select
+              value={formData.type}
+              onChange={(e) => setFormData({ ...formData, type: e.target.value })}
+              required
+              disabled={isDisabled}
+            >
+              <option value="sell">For Sale</option>
+              <option value="rent">For Rent</option>
+            </Select>
           </FormSection>
 
           <FormSection>
-            <Label>Upload Images</Label>
+            <Label>Product Images</Label>
             <FileInputWrapper>
               <FileInputLabel disabled={isDisabled}>
                 <UploadIcon>
-                  <svg
-                    width="24"
-                    height="24"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                  >
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
                     <polyline points="17 8 12 3 7 8" />
                     <line x1="12" y1="3" x2="12" y2="15" />
@@ -195,24 +268,18 @@ const CreatePost = () => {
                 <span>Choose images or drag & drop</span>
                 <FileInput
                   type="file"
-                  multiple //This attribute allows users to select multiple files at once.
-                  accept="image/*" //Restricts uploads to image files only.
+                  multiple
+                  accept="image/*"
                   onChange={(e) => {
-                    const newFiles = Array.from(e.target.files); //converts filelist to actual array
-                    const total =
-                      (formData.images?.length || 0) + newFiles.length;
+                    const newFiles = Array.from(e.target.files);
+                    const total = (formData.images?.length || 0) + newFiles.length;
                     if (total > 5) {
-                      alert("You can upload up to 5 images only.");
+                      alert('You can upload up to 5 images only.');
                       return;
                     }
-
                     setFormData((prev) => ({
-                      ...prev, //spreads that into a new object -> spread operator, copies all existing keys from previous state.
-                      //already exists->merge no->set it
-                      //Overrides or updates just that one field(images)
-                      images: prev.images
-                        ? [...prev.images, ...newFiles]
-                        : newFiles,
+                      ...prev,
+                      images: prev.images ? [...prev.images, ...newFiles] : newFiles
                     }));
                   }}
                   disabled={isDisabled}
@@ -224,11 +291,7 @@ const CreatePost = () => {
               <PreviewContainer>
                 {Array.from(formData.images).map((file, index) => (
                   <PreviewWrapper key={index}>
-                    <PreviewImg
-                      src={URL.createObjectURL(file)} //creates a temporary local URL from the file on your computer
-                      //This allows the browser to instantly preview it without uploading it to the backend yet.
-                      alt={`preview-${index}`} //alt text
-                    />
+                    <PreviewImg src={URL.createObjectURL(file)} alt={`preview-${index}`} />
                     <RemoveButton
                       type="button"
                       onClick={() => handleRemoveImage(index)}
@@ -242,19 +305,51 @@ const CreatePost = () => {
             )}
           </FormSection>
 
+          {/* Contact Information Section */}
+          <SectionDivider>
+            <SectionTitle>Contact Information</SectionTitle>
+          </SectionDivider>
+
           <FormSection>
-            <Label>Location *</Label>
+            <Label>Email *</Label>
+            <Input
+              type="email"
+              placeholder="your@email.com"
+              value={formData.contactEmail}
+              onChange={(e) => setFormData({ ...formData, contactEmail: e.target.value })}
+              required
+              disabled={isDisabled}
+            />
+          </FormSection>
+
+          <FormSection>
+            <Label>Phone Number *</Label>
+            <Input
+              type="tel"
+              placeholder="+91 98765 43210"
+              value={formData.contactPhone}
+              onChange={(e) => setFormData({ ...formData, contactPhone: e.target.value })}
+              required
+              disabled={isDisabled}
+            />
+          </FormSection>
+
+          {/* Location Section */}
+          <SectionDivider>
+            <SectionTitle>Location</SectionTitle>
+          </SectionDivider>
+
+          <FormSection>
+            <Label>Set Your Location *</Label>
             <LocationButtons>
               <LocationButton
-                type="button" //ensures it doesn’t accidentally submit the form.
+                type="button"
                 onClick={handleUseMyLocation}
                 disabled={isDisabled}
                 $active={location && !showMap}
               >
                 <ButtonIcon>📍</ButtonIcon>
-                <span>
-                  {loadingLocation ? "Getting location..." : "Use My Location"}
-                </span>
+                <span>{loadingLocation ? 'Getting location...' : 'Use My Location'}</span>
               </LocationButton>
               <LocationButton
                 type="button"
@@ -270,24 +365,21 @@ const CreatePost = () => {
             {location && !showMap && (
               <LocationInfo>
                 <InfoText>
-                  Location set: {location.latitude.toFixed(4)},{" "}
-                  {location.longitude.toFixed(4)}
+                  Location set: {location.latitude.toFixed(4)}, {location.longitude.toFixed(4)}
                 </InfoText>
               </LocationInfo>
             )}
 
             {showMap && location && (
               <MapWrapper>
-                <MapInstruction>
-                  Click on the map to set your location
-                </MapInstruction>
+                <MapInstruction>Click on the map to set your location</MapInstruction>
                 <MapContainer
-                  center={[location.latitude, location.longitude]} //sets the map’s initial center.
+                  center={[location.latitude, location.longitude]}
                   zoom={15}
                   style={{
-                    height: "350px",
-                    width: "100%",
-                    borderRadius: "12px",
+                    height: '350px',
+                    width: '100%',
+                    borderRadius: '12px'
                   }}
                 >
                   <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
@@ -300,7 +392,7 @@ const CreatePost = () => {
 
           <SubmitSection>
             <FilledButton
-              text={submitting ? "Creating Post..." : "Create Post"}
+              text={submitting ? 'Adding Product...' : 'Add Product'}
               type="submit"
               loading={submitting}
               disabled={isDisabled}
@@ -312,7 +404,7 @@ const CreatePost = () => {
   );
 };
 
-export default CreatePost;
+export default AddProduct;
 
 const Container = styled.div`
   max-width: 800px;
@@ -369,16 +461,40 @@ const FormCard = styled.form`
   padding: 40px;
   border: 2px solid #f0f0f0;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+
   @media (max-width: 768px) {
     padding: 24px;
   }
 `;
 
-const FormSection = styled.div`
-  margin-bottom: 32px;
+const SectionDivider = styled.div`
+  margin: 32px 0 24px 0;
+  padding-bottom: 12px;
+  border-bottom: 2px solid #f0f0f0;
 
-  &:last-child {
-    margin-bottom: 0;
+  &:first-child {
+    margin-top: 0;
+  }
+`;
+
+const SectionTitle = styled.h2`
+  font-size: 20px;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin: 0;
+`;
+
+const FormSection = styled.div`
+  margin-bottom: 24px;
+`;
+
+const RowGroup = styled.div`
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
   }
 `;
 
@@ -398,8 +514,8 @@ const Input = styled.input`
   border-radius: 10px;
   transition: all 0.2s ease;
   font-family: inherit;
-  background: ${(props) => (props.disabled ? "#f8f9fa" : "white")};
-  cursor: ${(props) => (props.disabled ? "not-allowed" : "text")};
+  background: ${props => props.disabled ? '#f8f9fa' : 'white'};
+  cursor: ${props => props.disabled ? 'not-allowed' : 'text'};
 
   &:focus {
     outline: none;
@@ -426,8 +542,8 @@ const Textarea = styled.textarea`
   transition: all 0.2s ease;
   font-family: inherit;
   resize: vertical;
-  background: ${(props) => (props.disabled ? "#f8f9fa" : "white")};
-  cursor: ${(props) => (props.disabled ? "not-allowed" : "text")};
+  background: ${props => props.disabled ? '#f8f9fa' : 'white'};
+  cursor: ${props => props.disabled ? 'not-allowed' : 'text'};
 
   &:focus {
     outline: none;
@@ -437,6 +553,28 @@ const Textarea = styled.textarea`
 
   &::placeholder {
     color: #94a3b8;
+  }
+
+  &:disabled {
+    opacity: 0.6;
+  }
+`;
+
+const Select = styled.select`
+  width: 100%;
+  padding: 14px 16px;
+  font-size: 15px;
+  border: 2px solid #e2e8f0;
+  border-radius: 10px;
+  transition: all 0.2s ease;
+  font-family: inherit;
+  background: ${props => props.disabled ? '#f8f9fa' : 'white'};
+  cursor: ${props => props.disabled ? 'not-allowed' : 'pointer'};
+
+  &:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
   }
 
   &:disabled {
@@ -456,14 +594,14 @@ const FileInputLabel = styled.label`
   padding: 32px;
   border: 2px dashed #cbd5e1;
   border-radius: 12px;
-  cursor: ${(props) => (props.disabled ? "not-allowed" : "pointer")};
+  cursor: ${props => props.disabled ? 'not-allowed' : 'pointer'};
   transition: all 0.2s ease;
-  background: ${(props) => (props.disabled ? "#f8f9fa" : "#fafbfc")};
-  opacity: ${(props) => (props.disabled ? 0.6 : 1)};
+  background: ${props => props.disabled ? '#f8f9fa' : '#fafbfc'};
+  opacity: ${props => props.disabled ? 0.6 : 1};
 
   &:hover {
-    border-color: ${(props) => (props.disabled ? "#cbd5e1" : "#667eea")};
-    background: ${(props) => (props.disabled ? "#f8f9fa" : "white")};
+    border-color: ${props => props.disabled ? '#cbd5e1' : '#667eea'};
+    background: ${props => props.disabled ? '#f8f9fa' : 'white'};
   }
 
   span {
@@ -514,17 +652,16 @@ const RemoveButton = styled.button`
   border: none;
   border-radius: 50%;
   font-size: 20px;
-  cursor: ${(props) => (props.disabled ? "not-allowed" : "pointer")};
+  cursor: ${props => props.disabled ? 'not-allowed' : 'pointer'};
   display: flex;
   align-items: center;
   justify-content: center;
   transition: all 0.2s ease;
-  opacity: ${(props) => (props.disabled ? 0.5 : 1)};
+  opacity: ${props => props.disabled ? 0.5 : 1};
 
   &:hover {
-    background: ${(props) =>
-      props.disabled ? "rgba(0, 0, 0, 0.7)" : "rgba(220, 38, 38, 0.9)"};
-    transform: ${(props) => (props.disabled ? "none" : "scale(1.1)")};
+    background: ${props => props.disabled ? 'rgba(0, 0, 0, 0.7)' : 'rgba(220, 38, 38, 0.9)'};
+    transform: ${props => props.disabled ? 'none' : 'scale(1.1)'};
   }
 `;
 
@@ -544,24 +681,20 @@ const LocationButton = styled.button`
   justify-content: center;
   gap: 8px;
   padding: 14px 20px;
-  background: ${(props) =>
-    props.$active
-      ? "linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
-      : "white"};
-  color: ${(props) => (props.$active ? "white" : "#1a1a1a")};
-  border: 2px solid ${(props) => (props.$active ? "transparent" : "#e2e8f0")};
+  background: ${props => props.$active ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' : 'white'};
+  color: ${props => props.$active ? 'white' : '#1a1a1a'};
+  border: 2px solid ${props => props.$active ? 'transparent' : '#e2e8f0'};
   border-radius: 10px;
   font-size: 15px;
   font-weight: 600;
-  cursor: ${(props) => (props.disabled ? "not-allowed" : "pointer")};
+  cursor: ${props => props.disabled ? 'not-allowed' : 'pointer'};
   transition: all 0.2s ease;
-  opacity: ${(props) => (props.disabled ? 0.6 : 1)};
+  opacity: ${props => props.disabled ? 0.6 : 1};
 
   &:hover {
-    border-color: ${(props) => (props.disabled ? "#e2e8f0" : "#667eea")};
-    transform: ${(props) => (props.disabled ? "none" : "translateY(-2px)")};
-    box-shadow: ${(props) =>
-      props.disabled ? "none" : "0 4px 12px rgba(102, 126, 234, 0.2)"};
+    border-color: ${props => props.disabled ? '#e2e8f0' : '#667eea'};
+    transform: ${props => props.disabled ? 'none' : 'translateY(-2px)'};
+    box-shadow: ${props => props.disabled ? 'none' : '0 4px 12px rgba(102, 126, 234, 0.2)'};
   }
 
   &:active {
@@ -606,29 +739,4 @@ const SubmitSection = styled.div`
   margin-top: 32px;
   padding-top: 32px;
   border-top: 1px solid #e2e8f0;
-`;
-const PostTypeGroup = styled.div`
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
-`;
-
-const PostTypeButton = styled.button`
-  padding: 10px 16px;
-  border-radius: 999px;
-  border: 2px solid #667eea;
-  background: ${({ $active }) => ($active ? "#667eea" : "transparent")};
-  color: ${({ $active }) => ($active ? "#fff" : "#667eea")};
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-
-  &:hover {
-    background: ${({ $active }) => ($active ? "#667eea" : "#eef1ff")};
-  }
-
-  &:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-  }
 `;
